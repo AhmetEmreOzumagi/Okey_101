@@ -64,7 +64,7 @@ Terminal istemeyenler için klasörde hazır dosyalar var:
 | **Windows** | `Windows - Internetten Oyna.bat` | `Windows - Oyunu Baslat.bat` |
 | **Mac** | `Mac - Internetten Oyna.command` | `Mac - Oyunu Baslat.command` |
 
-Windows'taki dosyalar Node.js kurulu değilse kurmayı da teklif eder. İnternetten indirilen dosyaları sistem ilk seferde engelleyebilir:
+Windows'taki dosyalar Node.js kurulu değilse kurmayı da teklif eder. Mac'te **Mac - Guncelle.command** oyunu GitHub'daki en yeni sürüme günceller (oyun kaydı kalır) ve internet linkiyle açar. İnternetten indirilen dosyaları sistem ilk seferde engelleyebilir:
 
 - **Windows** "Windows bilgisayarınızı korudu" derse **Ek bilgi → Yine de çalıştır**; "Yayımcı doğrulanamadı" derse **Çalıştır**.
 - **Mac** dosyayı açmazsa klasörde açtığınız terminalde bir kere `xattr -cr . && chmod +x *.command` çalıştırın, ya da doğrudan `node baslat.js link` kullanın.

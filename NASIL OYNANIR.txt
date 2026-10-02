@@ -19,6 +19,10 @@ Pencere açık kaldıkça link çalışır. İnternet bir anlığına koparsa ke
 yeniden bağlanır; link değişirse QR da değişir, o zaman herkes yeni kodu
 okutup aynı adını yazar. Link her açılışta yenidir.
 
+GÜNCELLEMEK (Mac)
+"Mac - Guncelle" dosyasına çift tıklayın: en yeni sürümü indirir, oyun kaydınız
+ve bağlantı aracı yerinde kalır, sonra oyunu internet linkiyle açar.
+
 AYNI WI-FI'DAN (internetsiz)
 1. Bilgisayar ve telefonlar aynı Wi-Fi'a bağlı olsun. İnternet gerekmez;
    modemin açık olması yeter.
