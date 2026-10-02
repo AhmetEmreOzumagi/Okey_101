@@ -227,11 +227,18 @@ function parseMelds(r, seat, melds, mode) {
       if (seen.has(id)) fail('Aynı taş iki kez kullanılamaz.');
       seen.add(id);
     }
-    const res = E.interpret(m, r.okey, mode);
-    if (!res) fail(mode === 'pairs' ? 'Geçersiz çift var.' : 'Geçersiz per var (seri ya da grup değil).');
+    // 'mixed': seriyle açan, masada çift açan varsa çift de indirebilir
+    const res = mode === 'mixed' ? E.interpret(m, r.okey, m.length === 2 ? 'pairs' : 'runs') : E.interpret(m, r.okey, mode);
+    if (!res) fail(mode === 'pairs' ? 'Geçersiz çift var.' : mode === 'mixed' ? 'Geçersiz per ya da çift var.' : 'Geçersiz per var (seri ya da grup değil).');
     out.push(res);
   }
   return { list: out, used: seen };
+}
+
+// Çift indirebilir mi: çiftle açan ya da seriyle açmış ama masada çift açan biri var
+function pairsAllowed(r, seat) {
+  const m = r.opened[seat];
+  return m === 'pairs' || (m === 'runs' && r.opened.some((o) => o === 'pairs'));
 }
 
 function placeMelds(r, seat, list, used) {
@@ -357,7 +364,7 @@ function act(s, seat, a) {
       const r = requireTurn(s, seat, 'play');
       const mode = r.opened[seat];
       if (!mode) fail('Önce elini açmalısın.');
-      const { list, used } = parseMelds(r, seat, a.melds, mode);
+      const { list, used } = parseMelds(r, seat, a.melds, pairsAllowed(r, seat) && mode === 'runs' ? 'mixed' : mode);
       if (r.took !== null && !used.has(r.took)) fail('Yandan aldığın taşı kullanmalısın.');
       if (r.hands[seat].length - used.size < 1) fail('Atacak bir taş bırakmalısın.');
       placeMelds(r, seat, list, used);
@@ -432,6 +439,11 @@ function act(s, seat, a) {
         finishWin(s, seat, id);
         return;
       }
+      // Ortada taş kalmadıysa el burada biter (sıradaki oyuncu yandan alamaz)
+      if (!r.stock.length) {
+        endRoundNoWin(s, 'stock');
+        return;
+      }
       r.turn = (seat + 1) % 4;
       r.tphase = 'draw';
       r.turnNo++;
@@ -473,7 +485,6 @@ function finishWin(s, w, lastTile) {
   if (lastOkey) note += ', okey atarak';
   note += '!';
   closeRound(s, { kind: 'win', winner: w, base, lastOkey, elden, note });
-  s.startSeat = (s.startSeat + 1) % 4;
 }
 
 function endRoundNoWin(s, kind) {
@@ -494,6 +505,8 @@ function closeRound(s, res) {
   });
   s.history.push({ no: r.no, kind: res.kind, winner: res.winner, total, counted: true, note: res.note });
   s.phase = 'roundEnd';
+  // Her elden sonra (biten olsun olmasın) başlama sırası bir sonraki oyuncuya geçer
+  s.startSeat = (s.startSeat + 1) % 4;
   addLog(s, res.note);
 }
 
@@ -629,4 +642,4 @@ function view(s, token, isOnline, extra) {
   return v;
 }
 
-module.exports = { create, normalize, join, lobbyAction, act, view, seatOf, deal, tick, openReq, GameError, newToken, TURN_CHOICES };
+module.exports = { create, normalize, join, lobbyAction, act, view, seatOf, deal, tick, openReq, pairsAllowed, GameError, newToken, TURN_CHOICES };

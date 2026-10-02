@@ -118,3 +118,21 @@ test('bot atarken okey ve işlek taş atmaz (elinde başka taş varsa)', () => {
     }
   }
 });
+
+test('bot perini bozmaz, işe yaramayan küçük taşı atar', () => {
+  const E = require('../public/engine.js');
+  const T = (c, n, copy = 0) => c * 26 + (n - 1) * 2 + copy;
+  const s = G.create();
+  G.join(s, 'İnsan', null, off, 0);
+  G.lobbyAction(s, 0, { type: 'fillBots' }, off);
+  G.lobbyAction(s, 0, { type: 'start' }, off);
+  const r = s.round;
+  r.okey = { c: 3, n: 1 };
+  r.melds = [];
+  // kırmızı 4-5-6 (per), sarı 9-10 (komşu), siyah 13 tek başına, mavi 2 tek başına
+  r.hands[1] = [T(0, 4), T(0, 5), T(0, 6), T(1, 9), T(1, 10), T(3, 13), T(2, 2)];
+  assert.equal(B.chooseDiscard(s, 1), T(2, 2));
+  // mavi 2 masaya işlenebiliyorsa (ceza) onu atmaz, sıradaki işe yaramayanı atar
+  r.melds = [Object.assign(E.interpret([T(2, 3), T(2, 4), T(2, 5)], r.okey, 'runs'), { id: 1, owner: 2 })];
+  assert.equal(B.chooseDiscard(s, 1), T(3, 13));
+});

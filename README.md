@@ -78,23 +78,23 @@ Windows'taki dosyalar Node.js kurulu değilse kurmayı da teklif eder. Mac'te **
 - **İşlemek:** **İşle** düğmesi (Seri diz'in yanında) işlenebilen bütün taşları kendiliğinden doğru perlere koyar; ıstakada dizili perleriniz İndir için kalır. Tek tek işlemek için taşı masadaki pere sürükleyin ya da taşı seçip pere dokunun. İşlenebilen ya da masadaki okeyi alabilen taşların altında yeşil bir çizgi olur.
 - **Masadaki okeyi almak:** okeyin yerine geçen taş sizdeyse onu o pere sürükleyin ya da **İşle**'ye basın; okey elinize gelir. Soldan böyle bir taş gelirse alıp hemen okeyi alabilirsiniz.
 - **Atmak:** taşı sağ alttaki **At** kutusuna sürükleyin ya da seçip **At**.
-- Okey elinizde de masadaki perlerde de ters (yeşil sırtı görünür) durur; sahte okey, temsil ettiği taş olarak ✿ işaretiyle görünür. Ortada sadece gösterge vardır. Kimin elinde kaç taş kaldığı görünmez.
+- Okey elinizde de masadaki perlerde de ters (yeşil sırtı görünür) durur; sahte okey sadece ✿ işaretiyle görünür. Ortada sadece gösterge vardır. Kimin elinde kaç taş kaldığı görünmez.
 - Süre dolarsa taş otomatik çekilip atılır.
 - Telefon kapanırsa sayfayı yenileyin; başka telefona geçtiyseniz aynı adı yazmanız yeterli. Bağlanma adresi ve QR kod menüde (☰) de var.
 
 ## Kurallar
 
-- Herkese 21, başlayana 22 taş dağıtılır. Başlayan çekmeden bir taş atar.
+- Herkese 21, başlayana 22 taş dağıtılır. Başlayan çekmeden bir taş atar. Her elden sonra bir sonraki oyuncu başlar.
 - **Okey**, göstergenin bir fazlasıdır (gösterge 13 ise okey 1) ve her taşın yerine geçer. İki **sahte okey** ise okey olan taşın kendisi olarak (o renk ve sayı) kullanılır.
 - **Seri:** aynı renk, ardışık, en az 3 taş (12-13-1 olmaz). **Grup:** aynı sayı, farklı renk, 3 ya da 4 taş.
-- **Açış:** tek seferde en az **101 puanlık** seri/grup ya da en az **5 çift**. Seriyle açan çift indiremez; çiftle açan yeni seri kuramaz ama işleyebilir.
+- **Açış:** tek seferde en az **101 puanlık** seri/grup ya da en az **5 çift**. Seriyle açan, masada çiftle açan biri varsa çiftlerini de indirebilir; çiftle açan yeni seri kuramaz ama işleyebilir.
 - Yandan aldığınız taşı aynı anda açışta ya da işlemede kullanmanız gerekir.
 - Açtıktan sonra masadaki bir okeyin yerine geçen taşı koyup okeyi alabilirsiniz (seri ve gruplarda; çiftlerde olmaz). Yandan gelen taşla da olur.
 - **Katlamalı** (açıksa): sonra açan, rakibinin açtığından en az 1 fazlasıyla açar; çiftte de 1 çift fazla gerekir. **Eşine katlanmaz:** siz 130 açtıysanız eşiniz yine 101 ile açabilir.
 - **Eşli** (açıksa): karşılıklı oturanlar eştir. Biri bitince eşinin el cezası silinir. Puanlar takım olarak toplanır.
 - Okey atmak ya da masadaki bir pere işlenebilecek taşı atmak: **+101 ceza**.
 - **El sonu:** biten -101 alır. Açanlar elde kalan taşların toplamını, çiftle açanlar iki katını, hiç açmayanlar 202 yazar. Okey atarak ya da çiftten bitilirse herkesin puanı iki katına çıkar. Kimse açmadan tek seferde tüm elini indirip biten -202 alır, diğerleri 404 yazar.
-- Deste biterse el puansız biter; sadece elinde okey olan okey başına 101 ceza yer.
+- Ortada taş kalmayınca son taşı çeken oyuncu taşını atar atmaz el biter (sıradaki yandan alamaz). El puansız biter; sadece elinde okey kalan okey başına 101 ceza yer.
 - Seçilen el sayısı bitince toplamı **en düşük** olan (eşlide en düşük takım) kazanır.
 
 ## İnternet linki nasıl çalışıyor?

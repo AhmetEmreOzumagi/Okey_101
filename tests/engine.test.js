@@ -373,12 +373,24 @@ test('çiftten açma ve karışmama', () => {
 test('deste biterse puansız el, okey tutan 101', () => {
   const { s } = setupGame();
   rig(s, [[T(1, 1), T(1, 2)], [WILD, T(2, 1)], [T(2, 3)], [T(2, 4)]], { stock: 0 });
+  // ortada taş yokken atılan taşla el hemen biter; sıradaki yandan alamaz
   G.act(s, 0, { type: 'discard', tile: T(1, 1) });
-  assert.throws(() => G.act(s, 1, { type: 'draw' }), /Deste/);
-  G.act(s, 1, { type: 'endStock' });
   assert.equal(s.phase, 'roundEnd');
   assert.deepEqual(s.round.result.base, [0, 101, 0, 0]);
   assert.equal(s.history[0].counted, true);
+  // sonraki eli bir sonraki oyuncu başlatır (biten olmasa da)
+  assert.equal(s.startSeat, 1);
+  G.act(s, 0, { type: 'next' });
+  assert.equal(s.round.turn, 1);
+  assert.equal(s.round.hands[1].length, 22);
+});
+
+test('eski kayıttaki gibi deste boşken sıra gelirse "Eli bitir" çalışır', () => {
+  const { s } = setupGame();
+  rig(s, [[T(1, 1), T(1, 2)], [WILD, T(2, 1)], [T(2, 3)], [T(2, 4)]], { stock: 0, tphase: 'draw' });
+  assert.throws(() => G.act(s, 0, { type: 'draw' }), /Deste/);
+  G.act(s, 0, { type: 'endStock' });
+  assert.equal(s.phase, 'roundEnd');
 });
 
 test('yeniden bağlanma: aynı isimle dönüş', () => {

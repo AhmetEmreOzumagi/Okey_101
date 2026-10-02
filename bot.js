@@ -56,39 +56,46 @@ function tryAct(s, seat, a) {
   }
 }
 
-// Atılacak taş: okey ve işlek taş atılmaz (ceza); perlere/çiftlere girecek taşlar tutulur;
-// geri kalanlardan en işe yaramazı (komşusu en az olan), eşitse büyük sayılı olan atılır.
+// Atılacak taş: okey ve işlek taş atılmaz (ceza); perlere/çiftlere girecek taşlar tutulur.
+// Geri kalanlardan işe yaramayanlar arasında en küçük sayılı olan atılır
+// (yarıyor gibi duranlar, yani yanında komşusu olanlar en sona kalır).
 function chooseDiscard(s, seat) {
   const r = s.round, okey = r.okey, hand = r.hands[seat];
   if (hand.length === 1) return hand[0];
   const bad = (id) => E.isWild(id, okey) || E.isLayable(id, r.melds, okey);
   let pool = hand.filter((id) => !bad(id));
   if (!pool.length) {
+    // hepsi okey ya da işlek: en azından okeyi atma, en küçük işlek taşı at
     const nonWild = hand.filter((id) => !E.isWild(id, okey));
-    return nonWild.length ? nonWild[0] : hand[0];
+    if (!nonWild.length) return hand[0];
+    return nonWild.sort((x, y) => E.natural(x, okey).n - E.natural(y, okey).n)[0];
   }
   const opened = r.opened[seat];
   const pairish = opened === 'pairs' || (!opened && E.suggestPairs(hand, okey).pairs.length >= 4);
   const keep = new Set();
   if (pairish) E.suggestPairs(hand, okey).pairs.forEach((g) => g.forEach((id) => keep.add(id)));
   else E.suggestMelds(hand, okey).melds.forEach((g) => g.forEach((id) => keep.add(id)));
+  if (opened === 'runs' && G.pairsAllowed(r, seat)) E.suggestPairs(hand, okey).pairs.forEach((g) => g.forEach((id) => keep.add(id)));
   const free = pool.filter((id) => !keep.has(id));
   if (free.length) pool = free;
   const nat = (id) => E.natural(id, okey);
-  const score = (id) => {
+  // 0: hiç işe yaramıyor, 1: zayıf ihtimal, 2: güçlü ihtimal (yanında komşusu var)
+  const use = (id) => {
     const a = nat(id);
-    let sc = 0;
+    let best = 0;
     for (const o of hand) {
-      if (o === id) continue;
-      if (E.isWild(o, okey)) continue;
+      if (o === id || E.isWild(o, okey)) continue;
       const b = nat(o);
-      if (b.c === a.c && b.n === a.n) sc += pairish ? 4 : 1;
-      else if (b.c === a.c && Math.abs(b.n - a.n) <= 2) sc += pairish ? 0.5 : 2;
-      else if (b.n === a.n) sc += pairish ? 0.5 : 2;
+      let v = 0;
+      if (b.c === a.c && b.n === a.n) v = pairish ? 2 : 1;
+      else if (b.c === a.c && Math.abs(b.n - a.n) === 1) v = pairish ? 1 : 2;
+      else if (b.c === a.c && Math.abs(b.n - a.n) === 2) v = 1;
+      else if (b.n === a.n) v = pairish ? 1 : 2;
+      if (v > best) best = v;
     }
-    return sc;
+    return best;
   };
-  pool.sort((x, y) => score(x) - score(y) || nat(y).n - nat(x).n);
+  pool.sort((x, y) => use(x) - use(y) || nat(x).n - nat(y).n);
   return pool[0];
 }
 
@@ -131,6 +138,12 @@ function playStep(s, seat) {
   if (opened === 'runs') {
     for (const g of E.suggestMelds(hand(), okey).melds) {
       if (hand().length - g.length >= 1) tryAct(s, seat, { type: 'meld', melds: [g] });
+    }
+    // masada çift açan varsa, seriyle açan da çiftlerini indirebilir
+    if (G.pairsAllowed(s.round, seat)) {
+      for (const g of E.suggestPairs(hand(), okey).pairs) {
+        if (hand().length - g.length >= 1) tryAct(s, seat, { type: 'meld', melds: [g] });
+      }
     }
   } else if (opened === 'pairs') {
     for (const g of pairsWithWild(hand(), okey)) {

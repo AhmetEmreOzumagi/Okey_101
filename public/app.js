@@ -148,12 +148,11 @@
     const wild = okey && E.isWild(id, okey);
     let c = 'tile' + (cls ? ' ' + cls : '');
     if (wild && (o.hand || o.table)) return `<div class="${c} back" data-tile="${id}"></div>`;
-    let num = t.n, col = t.c, mk = '';
-    if (t.fake && okey) { num = okey.n; col = okey.c; mk = '<i class="mk">✿</i>'; }
-    else if (t.fake) { return `<div class="${c} c3" data-tile="${id}"><span class="n" style="color:#2f8a55">✿</span></div>`; }
+    // Sahte okey: sayı yazmaz, sadece yonca işareti (okey olan taşın yerine geçer)
+    if (t.fake) return `<div class="${c} fake" data-tile="${id}"><span class="fk">✿</span></div>`;
+    let num = t.n, col = t.c;
     if (wild && o.rep) { num = o.rep.n; col = o.rep.c; c += ' wildrep'; }
-    else if (t.fake && o.rep) { num = o.rep.n; col = o.rep.c; }
-    return `<div class="${c} c${col}" data-tile="${id}"><span class="n">${num}</span><span class="d"></span>${mk}</div>`;
+    return `<div class="${c} c${col}" data-tile="${id}"><span class="n">${num}</span><span class="d"></span></div>`;
   }
   const backHTML = (cls) => `<div class="tile back ${cls || ''}"></div>`;
 
@@ -257,6 +256,12 @@
     return { runs, pairs, pairShown, runValue, runTiles, pairCount: pairs.length, total };
   }
 
+  // Çift indirebilir mi: çiftle açtıysa ya da seriyle açıp masada çift açan varsa
+  function pairsOk(r) {
+    const m = r.opened[view.me];
+    return m === 'pairs' || (m === 'runs' && r.opened.some((o) => o === 'pairs'));
+  }
+
   // =============== İşleme ===============
   // Elde masaya işlenebilen ya da masadaki okeyi alabilen taşlar (altlarında işaret çıkar)
   function islekSet() {
@@ -275,7 +280,10 @@
     const r = view.round, opened = r.opened[view.me];
     const hand = r.hand.concat(pendingSide !== null ? [pendingSide] : []);
     const keep = [];
-    if (opened) (opened === 'pairs' ? info.pairs : info.runs).forEach((c) => c.tiles.forEach((id) => keep.push(id)));
+    if (opened) {
+      const chs = opened === 'pairs' ? info.pairs : info.runs.concat(pairsOk(r) ? info.pairShown : []);
+      chs.forEach((c) => c.tiles.forEach((id) => keep.push(id)));
+    }
     return E.planIsle(hand, r.melds, r.okey, keep, pendingSide);
   }
 
@@ -298,11 +306,12 @@
     let toMeld = null;
     if (opened) {
       const sel = selectedInOrder();
+      const mixed = opened === 'runs' && pairsOk(r);
       if (sel.length) {
-        const m = E.interpret(sel, r.okey, opened);
+        const m = E.interpret(sel, r.okey, mixed && sel.length === 2 ? 'pairs' : opened);
         toMeld = m ? [sel] : null;
       } else {
-        const chs = opened === 'pairs' ? info.pairs : info.runs;
+        const chs = opened === 'pairs' ? info.pairs : info.runs.concat(mixed ? info.pairShown : []);
         toMeld = chs.length ? chs.map((c) => c.tiles) : null;
       }
       if (toMeld) {
@@ -767,7 +776,7 @@
 
   // Istakanın sağ üstündeki toplam
   function totalHTML(info, r, opened) {
-    const pairsView = opened === 'pairs' || (!opened && rackKind === 'pairs');
+    const pairsView = opened === 'pairs' || ((!opened || (opened === 'runs' && pairsOk(r) && !info.runs.length)) && rackKind === 'pairs');
     let main, cls = '';
     if (pairsView) {
       const need = opened ? 0 : r.req.pairs;
@@ -815,7 +824,8 @@
       const order = team ? [0, 2, 1, 3] : [0, 1, 2, 3];
       order.forEach((i, k) => {
         const p = v.seats[i];
-        const durum = i === res.winner ? 'Bitti' : r.opened[i] === 'runs' ? `Açtı (${r.openValue[i]})` : r.opened[i] === 'pairs' ? `Çift (${r.openValue[i]})` : 'Açmadı';
+        let durum = i === res.winner ? 'Bitti' : r.opened[i] === 'runs' ? `Açtı (${r.openValue[i]})` : r.opened[i] === 'pairs' ? `Çift (${r.openValue[i]})` : 'Açmadı';
+        if (res.kind !== 'win' && res.base && res.base[i] > 0) durum += `<div class="why">elinde okey kaldı: +${res.base[i]}</div>`;
         const hand = sortForShow(res.hands[i], r.okey).map((id) => tileHTML(id, 'tiny', r.okey, { hand: true })).join('');
         h += `<tr class="${i === res.winner ? 'win' : ''}"><td>${team ? `<span class="tdot ${teamCls(i)}"></span>` : ''}<b>${esc(p ? p.name : '')}</b></td><td>${durum}</td><td><div class="handline">${hand}</div></td>` +
           `<td class="num">${res.penalties[i] ? '+' + res.penalties[i] : ''}</td><td class="num ${res.total[i] < 0 ? 'neg' : 'pos'}">${res.total[i]}</td><td class="num">${v.totals[i]}</td></tr>`;
@@ -858,14 +868,14 @@
     if (!v.history.length) h += '<p>Henüz biten el yok.</p>';
     else {
       h += '<table class="score"><tr><th>El</th>' + v.seats.map((p, i) => `<th class="num">${team ? `<span class="tdot ${teamCls(i)}"></span>` : ''}${esc(p ? p.name : '')}</th>`).join('') +
-        (team ? '<th class="num">Takım 1</th><th class="num">Takım 2</th>' : '') + '</tr>';
+        (team ? '<th class="num"><span class="tdot ta"></span>Takım</th><th class="num"><span class="tdot tb"></span>Takım</th>' : '') + '</tr>';
       v.history.forEach((x) => {
         h += `<tr><td>${x.no}</td>` + x.total.map((n) => `<td class="num ${n < 0 ? 'neg' : ''}">${n}</td>`).join('') +
           (team ? `<td class="num">${x.total[0] + x.total[2]}</td><td class="num">${x.total[1] + x.total[3]}</td>` : '') + '</tr>';
       });
       h += '<tr class="team"><td>Toplam</td>' + v.totals.map((n) => `<td class="num">${n}</td>`).join('') +
         (team ? `<td class="num">${v.teamTotals[0]}</td><td class="num">${v.teamTotals[1]}</td>` : '') + '</tr></table>';
-      h += `<p class="sub" style="margin-top:10px">${v.completed} / ${v.settings.rounds} el oynandı. En düşük puan kazanır.</p>`;
+      h += `<p class="sub" style="margin-top:10px">${v.completed} / ${v.settings.rounds} el oynandı. En düşük puan kazanır. Deste bitince el puansız biter; sadece elinde okey kalan 101 yazar.</p>`;
     }
     h += '<div class="btns"><button class="btn primary" id="closeM">Kapat</button></div>';
     modal(h, (m) => { m.querySelector('#closeM').onclick = closeModal; });
@@ -874,13 +884,15 @@
   function showRules() {
     const st = view.settings;
     const h = '<h2>Kısa kurallar</h2><ul class="rules">' +
-      '<li>Herkese 21, başlayana 22 taş. Başlayan çekmeden bir taş atar. Okey, göstergenin bir üstüdür.</li>' +
+      '<li>Herkese 21, başlayana 22 taş. Başlayan çekmeden bir taş atar. Okey, göstergenin bir üstüdür. Her elden sonra bir sonraki oyuncu başlar.</li>' +
       '<li>Sıranda desteden çek ya da soldakinin attığını al. Yandan aldığın taşı o anda açışta ya da işlemede kullanırsın; kullanmazsan "Geri bırak" ile yerine döner.</li>' +
       '<li>Açış: tek seferde en az 101 puanlık seri/grup ya da en az 5 çift. Taşlarını ıstakada boşluklarla dizince toplamı ıstakanın sağ üstünde yazar; "Aç" hepsini birden indirir.</li>' +
       (st.katlamali ? '<li>Katlamalı: sonra açan, rakibinin açtığından en az 1 fazlasıyla açar (çiftte 1 çift fazla). Eşine katlanmaz.</li>' : '') +
       (st.mode === 'team' ? '<li>Eşli: karşılıklı oturanlar eş. Biri bitince eşinin el cezası silinir, puanlar takım olarak toplanır.</li>' : '') +
       '<li>Seri: aynı renk ardışık en az 3 taş (12-13-1 olmaz). Grup: aynı sayı farklı renk 3-4 taş.</li>' +
       '<li>Okey her taşın yerine geçer; elinde de masada da ters görünür. Sahte okey (✿) okey olan taşın yerine geçer.</li>' +
+      '<li>Seriyle açtıysan ve masada çiftle açan varsa, çiftlerini de indirebilirsin.</li>' +
+      '<li>Ortada taş kalmayınca son taşı atanla el biter; sadece elinde okey kalan 101 yazar.</li>' +
       '<li>Açtıktan sonra taşı masadaki bir pere sürükleyerek ya da "İşle" düğmesiyle işlersin. İşlenebilen ya da okey alabilen taşların altında yeşil çizgi olur.</li>' +
       '<li>Masadaki bir okeyin yerine geçen taş sende varsa (açtıysan) o taşı pere koyup okeyi alırsın. Yandan gelen taşla da olur; "İşle" bunu kendisi yapar.</li>' +
       '<li>Okey atmak ya da işlenebilecek taşı atmak 101 ceza.</li>' +

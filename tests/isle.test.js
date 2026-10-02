@@ -167,3 +167,17 @@ test('başkalarının taş sayısı ekranda yazmaz', () => {
   const app = fs.readFileSync(require('path').join(__dirname, '..', 'public', 'app.js'), 'utf8');
   assert.ok(!/handCounts\[seat\]\} taş/.test(app));
 });
+
+test('seriyle açan, masada çift açan varsa çift de indirebilir', () => {
+  const s = setup([[T(0, 3), T(0, 3, 1), T(1, 9), T(1, 9, 1), T(3, 1), T(3, 2)], [T(1, 1)], [T(1, 2)], [T(1, 3)]], [meld([T(0, 9), T(0, 10), T(0, 11)], 1, 0)], { opened: ['runs', null, null, null] });
+  // kimse çiftle açmamışken çift indirilemez
+  assert.throws(() => G.act(s, 0, { type: 'meld', melds: [[T(0, 3), T(0, 3, 1)]] }), /Geçersiz/);
+  s.round.opened[2] = 'pairs';
+  G.act(s, 0, { type: 'meld', melds: [[T(0, 3), T(0, 3, 1)], [T(1, 9), T(1, 9, 1)]] });
+  assert.equal(s.round.melds.filter((m) => m.type === 'pair' && m.owner === 0).length, 2);
+  assert.deepEqual(s.round.hands[0], [T(3, 1), T(3, 2)]);
+  // çiftle açan yine seri indiremez
+  s.round.hands[2] = [T(2, 5), T(2, 6), T(2, 7), T(3, 9)];
+  s.round.turn = 2;
+  assert.throws(() => G.act(s, 2, { type: 'meld', melds: [[T(2, 5), T(2, 6), T(2, 7)]] }), /çift/);
+});
