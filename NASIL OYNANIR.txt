@@ -36,6 +36,14 @@ Herkes adını yazıp masadaki boş bir sandalyeye dokunsun. Ayarlardan
 Eşli/Eşsiz, Katlamalı, hamle süresi ve el sayısını seçin. Dört kişi olunca
 "Oyunu başlat".
 
+2 YA DA 3 KİŞİYSENİZ: BOTLAR
+Masada boş yer varsa "Boş yerlere bot oturt"a basın (ya da boş sandalyenin
+altındaki "bot koy"a dokunun). Botlar kendi sırasında kendiliğinden oynar:
+çeker, açar, işler, atar. Eşli oyunda bot eşiniz de olabilir. Bot istemezseniz
+altındaki "çıkar"a dokunun.
+Oyun sürerken bir arkadaş gelirse: linke girip adını yazsın ve bir botun
+sandalyesine dokunsun ("yerine geç"). Botun taşlarıyla oyuna devam eder.
+
 İLK SEFERDE ÇIKABİLECEK SORULAR
 - Windows "Windows bilgisayarınızı korudu" derse: "Ek bilgi" > "Yine de çalıştır".
 - Windows Güvenlik Duvarı sorarsa "Erişime izin ver" deyin (aynı Wi-Fi'dan

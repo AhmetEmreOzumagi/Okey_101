@@ -8,6 +8,7 @@ Arkadaşlarla telefondan oynanan 4 kişilik **101 Okey**. Oyunu bir bilgisayar a
 
 - **Her ağdan oynanır:** internet linkiyle herkes kendi yerinden girer; biri evin Wi-Fi'ında, biri hotspot'ta, biri mobil veride olabilir. İsterseniz internetsiz, aynı Wi-Fi'dan da oynanır.
 - **QR kodla giriş:** bilgisayardaki sayfada çıkan kodu telefon kamerasıyla okutmak yeter.
+- **2-3 kişi de olur:** boş yerlere bot oturur, botlar kendiliğinden oynar. Sonradan gelen arkadaş bir botun yerine geçer.
 - **Oyun modları:** eşli / eşsiz, katlamalı (eşine katlanmaz), hamle süresi (20–60 sn ya da süresiz), el sayısı.
 - **Kolay ıstaka:** dizili perlerin toplamı ıstakanın köşesinde yazar; yetince tek dokunuşla açılır. "Seri diz" ve "Çift diz" perler arasında boşluk bırakarak dizer. Yandan alınan taş işe yarayacağı yere kendiliğinden yerleşir.
 - **İşle düğmesi:** işlenebilen taşlar işaretlenir, tek dokunuşla masaya işlenir; masadaki okey alınabiliyorsa onu da alır.
@@ -43,7 +44,7 @@ cd Okey_101
    ```
 
 3. Bilgisayarda oyun sayfası açılır, birkaç saniye içinde internet linkinin **QR kodu** çıkar. Arkadaşlarınız kodu okutur ya da linki WhatsApp'tan atarsınız.
-4. Herkes adını yazıp masada boş bir sandalyeye dokunur. Ayarlardan modu seçin; dört kişi olunca **Oyunu başlat**.
+4. Herkes adını yazıp masada boş bir sandalyeye dokunur. Ayarlardan modu seçin; dört kişi olunca **Oyunu başlat**. Az kişiyseniz **Boş yerlere bot oturt**'a basın.
 
 Pencere açık kaldıkça oyun ve link çalışır. Kapatınca oyun durur; tekrar açınca kaldığı yerden devam eder.
 
@@ -123,6 +124,7 @@ Daha ayrıntılı Türkçe kılavuz: [NASIL OYNANIR.txt](NASIL%20OYNANIR.txt)
 | `baslat.js` | Başlatıcı: oyunu açar, `link` ile tüneli kurar, bilgisayarın uyumasını engeller |
 | `server.js` | HTTP sunucusu; anlık güncellemeler SSE ile, kesilirse yoklama ile |
 | `game.js` | Masa, sıra, süre, açış/işleme/ceza ve puan hesabı (bütün kurallar sunucuda) |
+| `bot.js` | Boş koltuklar için bilgisayar oyuncusu |
 | `public/engine.js` | Taş, seri/grup/çift kontrolü ve ıstaka dizme (sunucu ve telefon ortak kullanır) |
 | `public/` | Telefonlarda açılan tek sayfalık arayüz (`app.js`, `style.css`, `qr.js`) |
 | `tests/` | Kural testleri, 200 oyunluk simülasyon ve HTTP testi |

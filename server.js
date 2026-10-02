@@ -7,6 +7,7 @@ const os = require('os');
 const zlib = require('zlib');
 const crypto = require('crypto');
 const G = require('./game.js');
+const B = require('./bot.js');
 
 const BASE_PORT = parseInt(process.env.PORT || '8101', 10);
 const STATE_FILE = process.env.OKEY_STATE || path.join(__dirname, 'oyun-kaydi.json');
@@ -440,10 +441,13 @@ const server = http.createServer((req, res) => {
 server.keepAliveTimeout = 30000;
 server.headersTimeout = 35000;
 
-// Süre sayacı: süresi dolanın yerine otomatik oyna
+// Süre sayacı (süresi dolanın yerine otomatik oyna) ve botlar
 setInterval(() => {
   try {
-    if (G.tick(state, Date.now())) {
+    const now = Date.now();
+    let changed = G.tick(state, now);
+    if (B.step(state, now)) changed = true;
+    if (changed) {
       save();
       broadcast();
     }

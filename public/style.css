@@ -193,6 +193,17 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   border: 2px dashed transparent;
 }
 .lav.empty:active, .lav:active { transform: scale(.92); }
+.lav.bot { font-size: 30px; }
+.av.bot { font-size: calc(var(--s) * .5); }
+.tcenter .botfill { margin-top: 4px; font-size: 13px; color: var(--brass); }
+/* Yatay küçük telefonlar: masa biraz büyüsün, ortadaki etiketler (ayarlarda zaten var) gizlensin */
+@media (max-height: 450px) {
+  .ltable { width: min(calc(100% - 96px), max(calc(60vh * 1.25), 330px)); }
+  .tcenter { gap: 5px; }
+  .tcenter .tags { display: none; }
+  .tcenter .botfill { font-size: 12px; margin-top: 0; }
+}
+
 .lseat.ta .lav:not(.empty) { box-shadow: 0 0 0 4px var(--team-a), 0 6px 14px rgba(0, 0, 0, .4); }
 .lseat.tb .lav:not(.empty) { box-shadow: 0 0 0 4px var(--team-b), 0 6px 14px rgba(0, 0, 0, .4); }
 .lseat.ta .lav.empty { box-shadow: inset 0 0 0 2px var(--team-a); }
@@ -300,6 +311,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .who .bd .op { background: rgba(143, 224, 160, .2); color: var(--ok); }
 .who .bd .pen { background: rgba(224, 82, 82, .3); color: #ffc9c9; }
 .who .bd .mate { background: rgba(255, 255, 255, .16); }
+.who .bd .bot { background: rgba(127, 196, 236, .22); color: #cfe9f8; }
 .chip-top .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
 /* Orta: deste, gösterge, durum */

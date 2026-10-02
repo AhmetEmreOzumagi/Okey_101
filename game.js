@@ -23,7 +23,7 @@ function create() {
     v: 1,
     seq: 0,
     phase: 'lobby', // lobby | playing | roundEnd | gameEnd
-    seats: [null, null, null, null], // {name, token}
+    seats: [null, null, null, null], // {name, token, bot?}
     settings: Object.assign({}, DEFAULTS),
     startSeat: 0,
     history: [],
@@ -59,6 +59,11 @@ function addLog(s, text) {
   if (s.log.length > 80) s.log.splice(0, s.log.length - 80);
 }
 const nameOf = (s, i) => (s.seats[i] ? s.seats[i].name : 'Koltuk ' + (i + 1));
+const BOT_NAMES = ['Bot Ali', 'Bot Ayşe', 'Bot Can', 'Bot Zeynep', 'Bot Mehmet', 'Bot Elif'];
+function botName(s) {
+  const taken = new Set(s.seats.filter(Boolean).map((p) => p.name.toLocaleLowerCase('tr')));
+  return BOT_NAMES.find((n) => !taken.has(n.toLocaleLowerCase('tr'))) || 'Bot';
+}
 const completedRounds = (s) => s.history.filter((h) => h.counted).length;
 const isTeam = (s) => s.settings.mode === 'team';
 const partnerOf = (seat) => (seat + 2) % 4;
@@ -120,13 +125,22 @@ function join(s, name, token, isOnline, wantSeat) {
   if (!name) fail('Önce adını yaz.');
   const same = s.seats.findIndex((p) => p && p.name.toLocaleLowerCase('tr') === name.toLocaleLowerCase('tr'));
   if (same >= 0) {
-    if (isOnline(s.seats[same].token)) fail('Bu isim masada zaten var, başka bir isim yaz.');
+    if (s.seats[same].bot || isOnline(s.seats[same].token)) fail('Bu isim masada zaten var, başka bir isim yaz.');
     // Bağlantısı kopmuş oyuncu aynı isimle yerine döner (telefon değişse bile).
     s.seats[same].token = newToken();
     addLog(s, `${s.seats[same].name} geri döndü.`);
     return { seat: same, token: s.seats[same].token };
   }
-  if (s.phase !== 'lobby') fail('Oyun başladı, masa dolu. Masadaysan adını aynen yaz.');
+  if (s.phase !== 'lobby') {
+    // Oyun sürerken gelen biri bir botun yerine geçebilir (elindeki taşlarla devam eder)
+    const botSeat = wantSeat >= 0 && wantSeat < 4 && s.seats[wantSeat] && s.seats[wantSeat].bot ? wantSeat : -1;
+    if (botSeat < 0) fail(s.seats.some((p) => p && p.bot) ? 'Oyun sürüyor. Bir botun yerine geçmek için botun sandalyesine dokun.' : 'Oyun başladı, masa dolu. Masadaysan adını aynen yaz.');
+    const old = s.seats[botSeat].name;
+    const t = newToken();
+    s.seats[botSeat] = { name, token: t };
+    addLog(s, `${name}, ${old} yerine oyuna girdi.`);
+    return { seat: botSeat, token: t };
+  }
   let free = wantSeat >= 0 && wantSeat < 4 && !s.seats[wantSeat] ? wantSeat : s.seats.findIndex((p) => !p);
   if (free < 0) fail('Masa dolu (4 kişi).');
   const t = newToken();
@@ -500,11 +514,23 @@ function lobbyAction(s, seat, a, isOnline) {
       s.seats[seat] = null;
       return;
     }
+    case 'addBot':
+    case 'fillBots': {
+      if (s.phase !== 'lobby') fail('Bot, oyun başlamadan eklenir.');
+      const targets = a.type === 'fillBots' ? [0, 1, 2, 3].filter((i) => !s.seats[i]) : [a.seat];
+      if (!targets.length) fail('Boş koltuk yok.');
+      for (const t of targets) {
+        if (!(t >= 0 && t < 4) || s.seats[t]) fail('Bu koltuk dolu.');
+        s.seats[t] = { name: botName(s), token: newToken(), bot: true };
+        addLog(s, `${s.seats[t].name} masaya oturdu.`);
+      }
+      return;
+    }
     case 'kick': {
       if (s.phase !== 'lobby') fail('Oyun sürerken çıkarılamaz.');
       const t = a.seat;
       if (!s.seats[t]) fail('Koltuk boş.');
-      if (isOnline(s.seats[t].token)) fail('Bağlı oyuncu çıkarılamaz.');
+      if (!s.seats[t].bot && isOnline(s.seats[t].token)) fail('Bağlı oyuncu çıkarılamaz.');
       addLog(s, `${nameOf(s, t)} masadan çıkarıldı.`);
       s.seats[t] = null;
       return;
@@ -530,7 +556,8 @@ function lobbyAction(s, seat, a, isOnline) {
     }
     case 'start': {
       if (s.phase !== 'lobby') fail('Oyun zaten başladı.');
-      if (s.seats.some((p) => !p)) fail('Başlamak için 4 kişi gerekli.');
+      if (s.seats.some((p) => !p)) fail('Başlamak için 4 kişi gerekli. Boş yerlere bot oturtabilirsin.');
+      if (s.seats.every((p) => p.bot)) fail('Masada en az bir kişi olmalı.');
       s.history = [];
       s.startSeat = crypto.randomInt(4);
       deal(s);
@@ -561,7 +588,7 @@ function view(s, token, isOnline, extra) {
     boot: (extra && extra.boot) || '',
     phase: s.phase,
     me,
-    seats: s.seats.map((p) => (p ? { name: p.name, online: isOnline(p.token) } : null)),
+    seats: s.seats.map((p) => (p ? { name: p.name, online: !!p.bot || isOnline(p.token), bot: !!p.bot } : null)),
     settings: s.settings,
     history: s.history,
     totals,

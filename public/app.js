@@ -31,6 +31,8 @@
   function emptySlots() { return new Array(SLOTS).fill(null); }
   function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   const initial = (n) => (String(n || '?').trim()[0] || '?').toLocaleUpperCase('tr');
+  // Avatar içi: bot için robot, kişi için baş harf
+  const avatarText = (p) => (p && p.bot ? '🤖' : esc(initial(p && p.name)));
 
   // =============== Bağlantı ===============
   let es = null, lastSeen = Date.now(), pollTimer = null, polling = false;
@@ -539,10 +541,14 @@
         `<span class="tag">${st.turnSecs ? st.turnSecs + ' sn' : 'Süresiz'}</span>` +
         `<span class="tag">${st.rounds} el</span></div>`;
       h += `<div class="count">${filled} / 4 oyuncu</div>`;
-      if (seated) h += `<button class="btn primary" data-act="start"${filled === 4 ? '' : ' disabled'}>Oyunu başlat</button>`;
-      else h += '<div class="count">Adını yaz, boş bir sandalyeye dokun</div>';
+      if (seated) {
+        h += `<button class="btn primary" data-act="start"${filled === 4 ? '' : ' disabled'}>Oyunu başlat</button>`;
+        if (filled < 4) h += `<button class="lnk botfill" data-act="fillBots">Boş yerlere bot oturt (${4 - filled})</button>`;
+      } else h += '<div class="count">Adını yaz, boş bir sandalyeye dokun</div>';
     } else {
-      h += '<div class="count">Oyun sürüyor</div><div class="teamnote">Masadaysan kendi sandalyene dokun, yerine dönersin.</div>';
+      const bots = v.seats.some((p) => p && p.bot);
+      h += '<div class="count">Oyun sürüyor</div><div class="teamnote">' +
+        (seated ? '' : 'Masadaysan kendi sandalyene dokun, yerine dönersin.' + (bots ? ' Yeni geldiysen adını yaz, bir botun sandalyesine dokun; onun yerine oynarsın.' : '')) + '</div>';
     }
     h += '</div>';
     for (let s = 0; s < 4; s++) {
@@ -553,15 +559,20 @@
       h += `<div class="lseat ${pos(s)}${tcls}${isMe ? ' me' : ''}${arrive}">`;
       if (p) {
         const canReclaim = !seated && !lobby && !p.online;
-        h += `<button class="lav" ${canReclaim ? `data-reclaim="${s}"` : ''}>${esc(initial(p.name))}${p.online ? '' : '<span class="off"></span>'}</button>`;
+        const canTake = !seated && !lobby && p.bot;
+        const tap = canReclaim ? `data-reclaim="${s}"` : canTake ? `data-takeover="${s}"` : '';
+        h += `<button class="lav${p.bot ? ' bot' : ''}" ${tap}>${avatarText(p)}${p.online ? '' : '<span class="off"></span>'}</button>`;
         h += `<div class="lname">${esc(p.name)}</div><div class="lsub">`;
         if (isMe) h += lobby ? 'sen <button class="lnk" data-act="leave">kalk</button>' : 'sen';
-        else if (team && seated && s === (me + 2) % 4) h += 'eşin';
+        else if (team && seated && s === (me + 2) % 4) h += p.bot ? 'eşin (bot)' : 'eşin';
+        else if (p.bot) h += canTake ? `<button class="lnk" data-takeover="${s}">yerine geç</button>` : 'bot';
         else h += p.online ? 'bağlı' : 'bağlantı yok';
         if (lobby && seated && !isMe && !p.online) h += ` <button class="lnk" data-kick="${s}">çıkar</button>`;
+        if (lobby && seated && p.bot) h += ` <button class="lnk" data-kick="${s}">çıkar</button>`;
         h += '</div>';
       } else {
-        h += `<button class="lav empty" data-sit="${s}" ${lobby ? '' : 'disabled'}>+</button><div class="lname" style="opacity:.75">Boş</div><div class="lsub">${lobby ? 'otur' : ''}</div>`;
+        h += `<button class="lav empty" data-sit="${s}" ${lobby ? '' : 'disabled'}>+</button><div class="lname" style="opacity:.75">Boş</div>` +
+          `<div class="lsub">${lobby ? 'otur' : ''}${lobby && seated ? ` · <button class="lnk" data-bot="${s}">bot koy</button>` : ''}</div>`;
       }
       h += '</div>';
     }
@@ -643,8 +654,9 @@
     else if (r.opened[seat] === 'pairs') bd += `<span class="op">${r.openValue[seat]} çift</span>`;
     if (r.penalties[seat]) bd += `<span class="pen">+${r.penalties[seat]}</span>`;
     if (isTeam() && seat === (v.me + 2) % 4) bd += '<span class="mate">eş</span>';
+    if (p.bot) bd += '<span class="bot">bot</span>';
     const turn = v.phase === 'playing' && r.turn === seat ? ' turn' : '';
-    const av = `<div class="av">${esc(initial(p.name))}<svg viewBox="0 0 36 36"><circle class="tr" cx="18" cy="18" r="16"/><circle class="pg" cx="18" cy="18" r="16" pathLength="100"/></svg>${p.online ? '' : '<span class="off"></span>'}</div>`;
+    const av = `<div class="av${p.bot ? ' bot' : ''}">${avatarText(p)}<svg viewBox="0 0 36 36"><circle class="tr" cx="18" cy="18" r="16"/><circle class="pg" cx="18" cy="18" r="16" pathLength="100"/></svg>${p.online ? '' : '<span class="off"></span>'}</div>`;
     if (side) return `<div class="who ${teamCls(seat)}${turn}" data-seat="${seat}">${av}<div class="nm">${esc(p.name)}</div><div class="bd">${bd}</div></div>`;
     return `<div class="who ${teamCls(seat)}${turn}" data-seat="${seat}">${av}<div class="info"><div class="nm">${esc(p.name)}</div><div class="bd">${bd}</div></div></div>`;
   }
@@ -1183,6 +1195,22 @@
       const a = act.dataset.act;
       if (a === 'start') api('start');
       else if (a === 'leave') api('leave');
+      else if (a === 'fillBots') api('fillBots');
+      return;
+    }
+    const bot = t.closest('[data-bot]');
+    if (bot) { api('addBot', { seat: +bot.dataset.bot }); return; }
+    const take = t.closest('[data-takeover]');
+    if (take) {
+      const name = $('#nameIn').value.trim();
+      if (!name) {
+        const nb = $('#nameBar');
+        nb.classList.remove('shake'); void nb.offsetWidth; nb.classList.add('shake');
+        $('#nameIn').focus();
+        toast('Önce adını yaz, sonra botun sandalyesine dokun.');
+        return;
+      }
+      joinAs(name, +take.dataset.takeover);
       return;
     }
     if (t.closest('[data-m="scores"]')) { showScores(); return; }

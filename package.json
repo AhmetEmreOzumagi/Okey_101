@@ -13,7 +13,7 @@
   "scripts": {
     "start": "node baslat.js",
     "link": "node baslat.js link",
-    "test": "node --test tests/engine.test.js tests/isle.test.js && node tests/sim.js 200 && node tests/http-test.js"
+    "test": "node --test tests/engine.test.js tests/isle.test.js tests/bot.test.js && node tests/sim.js 200 && node tests/http-test.js"
   },
   "engines": {
     "node": ">=16"
