@@ -1,0 +1,21 @@
+{
+  "name": "101-okey",
+  "version": "1.0.0",
+  "description": "Arkadaşlarla telefondan oynanan 4 kişilik 101 Okey. Bir bilgisayar açar, herkes tarayıcıdan girer.",
+  "private": true,
+  "main": "baslat.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AhmetEmreOzumagi/Okey_101.git"
+  },
+  "homepage": "https://github.com/AhmetEmreOzumagi/Okey_101#readme",
+  "keywords": ["okey", "101-okey", "turkish", "board-game", "multiplayer", "browser-game"],
+  "scripts": {
+    "start": "node baslat.js",
+    "link": "node baslat.js link",
+    "test": "node --test tests/engine.test.js && node tests/sim.js 200 && node tests/http-test.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

@@ -1,0 +1,117 @@
+101 OKEY — NASIL OYNANIR
+========================
+
+GEREKEN (sadece oyunu açan bilgisayarda, bir kez)
+Oyunu bir bilgisayar açar: Mac, Windows ya da Linux. O bilgisayarda Node.js
+kurulu olmalı: https://nodejs.org adresinden "LTS" sürümünü indirip kurun.
+Windows'ta başlatma dosyası Node yoksa kendisi kurmayı da teklif eder.
+Telefonlara ve tabletlere hiçbir şey kurulmaz; tarayıcıdan girilir.
+
+EN KOLAY VE KESİN YOL: İNTERNET LİNKİ
+  Windows'ta:  "Windows - Internetten Oyna" dosyasına çift tıklayın.
+  Mac'te:      "Mac - Internetten Oyna" dosyasına çift tıklayın.
+  Terminalden: bu klasörde   node baslat.js link
+Oyun açılır ve bir internet linki oluşur (ilk seferde ~20 MB'lık bağlantı
+aracı iner, kurulmaz). Bilgisayardaki oyun sayfasında bu linkin QR kodu
+çıkar. Herkes kodu okutup girer: telefon hotspot'ta, başka bir Wi-Fi'da ya da
+kendi mobil verisinde olabilir, fark etmez. Oyun çok az internet harcar.
+Pencere açık kaldıkça link çalışır. İnternet bir anlığına koparsa kendiliğinden
+yeniden bağlanır; link değişirse QR da değişir, o zaman herkes yeni kodu
+okutup aynı adını yazar. Link her açılışta yenidir.
+
+AYNI WI-FI'DAN (internetsiz)
+1. Bilgisayar ve telefonlar aynı Wi-Fi'a bağlı olsun. İnternet gerekmez;
+   modemin açık olması yeter.
+2. Windows'ta "Windows - Oyunu Baslat", Mac'te "Mac - Oyunu Baslat" dosyasına
+   çift tıklayın (terminalden: node baslat.js). Bir pencere açılır,
+   bilgisayarda da oyun sayfası açılır. Bu pencereyi oyun bitene kadar
+   KAPATMAYIN.
+3. Bilgisayarda açılan sayfadaki QR kodu telefon kamerasıyla okutun
+   ya da telefonun tarayıcısına (Android'de Chrome, iPhone'da Safari) orada
+   yazan adresi girin (örn. 192.168.1.34:8101). Android ve iPhone birlikte
+   oynayabilir.
+
+SONRA
+Herkes adını yazıp masadaki boş bir sandalyeye dokunsun. Ayarlardan
+Eşli/Eşsiz, Katlamalı, hamle süresi ve el sayısını seçin. Dört kişi olunca
+"Oyunu başlat".
+
+İLK SEFERDE ÇIKABİLECEK SORULAR
+- Windows "Windows bilgisayarınızı korudu" derse: "Ek bilgi" > "Yine de çalıştır".
+- Windows Güvenlik Duvarı sorarsa "Erişime izin ver" deyin (aynı Wi-Fi'dan
+  oynamak için gerekir; internet linki için gerekmez).
+- macOS "gelen bağlantılara izin verilsin mi?" diye sorarsa "İzin Ver" deyin.
+- Mac çift tıklanan dosyayı açmazsa Terminal'de bir kere şunu çalıştırın
+  (GitHub'dan indirilen klasör İndirilenler'de "Okey_101-main" adıyla durur;
+  adı farklıysa onu yazın):
+     cd ~/Downloads/Okey_101-main && xattr -cr . && chmod +x *.command
+  ya da hiç uğraşmadan:  cd ~/Downloads/Okey_101-main && node baslat.js link
+- Oyun açıkken bilgisayar uyumaz; dizüstünün kapağını kapatmayın.
+
+OYUN İÇİNDE
+- Telefonu yan çevirin. Menüden (☰) "Tam ekran" seçebilirsiniz.
+  iPhone'da tam ekran için: Safari'de Paylaş → Ana Ekrana Ekle, sonra
+  ana ekrandaki 101 Okey simgesinden açın.
+- iPhone'da ekran dönmüyorsa Denetim Merkezi'nden döndürme kilidini kapatın.
+- Telefon "yerel ağdaki aygıtları bulma" izni isterse "İzin Ver" deyin.
+- Taşa dokununca seçilir. Sürükleyerek ıstakada yerini değiştirirsiniz.
+  "Seri diz" ya da "Çift diz" taşları perler arasında boşluk bırakarak dizer.
+- Istakanın sağ üstünde dizili perlerinizin toplamı yazar (ör. 108 / 101,
+  yetince yeşil olur). Yetince "Aç"a basmanız yeter,
+  dizili perlerin hepsi birden açılır. Açtıktan sonra "İndir" yeni dizdiğiniz
+  perleri masaya koyar.
+- Sıranız gelince desteye dokunup çekin ya da soldaki oyuncunun attığı taşa
+  dokunup alın. Yandan alınan taş ıstakada işe yarayacağı yere kendiliğinden
+  yerleşir. Onunla açamazsanız "Geri bırak"a basın (ya da desteye dokunun),
+  taş yerine döner.
+- İşlemek için taşı masadaki pere sürükleyin (ya da taşı seçip pere dokunun).
+- Atmak için taşı sağ alttaki "At" kutusuna sürükleyin (ya da seçip "At").
+- Elinizdeki okey ters (yeşil sırtı görünür) durur. Sahte okey, temsil ettiği
+  taş olarak ✿ işaretiyle görünür. Ortada sadece gösterge vardır.
+- Her hamle için süre vardır (varsayılan 30 sn). Süre dolarsa taş
+  otomatik çekilip atılır.
+
+TELEFON KAPANIRSA / BAĞLANTI KOPARSA
+Sayfayı yenileyin, kaldığınız yerden devam edersiniz. Başka telefona
+geçtiyseniz aynı adı yazmanız yeterli. Adres lazımsa oyundaki menüde (☰)
+"Bağlanma adresi (QR)" var.
+Bilgisayardaki pencere kapanırsa başlatma dosyasına tekrar çift tıklayın;
+oyun kaldığı yerden devam eder.
+
+BAZI CİHAZLAR GİREMİYORSA ("Bu siteye ulaşılamıyor")
+Sorun oyunda değil ağdadır. Sırayla bakın:
+1. Herkes bilgisayarla AYNI Wi-Fi'da mı? Bilgisayarın bağlı olduğu ağın adı
+   pencerede ve oyun sayfasında yazar. Telefonlar bazen kendiliğinden başka bilinen bir ağa
+   ya da mobil veriye geçer.
+2. Telefonun Wi-Fi ayrıntılarındaki IP adresi, bilgisayarın adresinin ilk üç
+   sayısıyla başlamalı (bilgisayar 192.168.1.34 ise telefon 192.168.1.xx).
+   Windows'ta ağ profili "Özel ağ" olmalı (Ayarlar > Ağ ve internet > Wi-Fi).
+3. Herkes aynı ağdayken yine giremeyen varsa o ağ cihazları birbirinden
+   ayırıyordur. Telefon hotspot'ları, yurt/okul/kafe ağları ve modemlerin
+   misafir ağları bunu yapar; hotspot'u açan telefon girer, diğerleri giremez.
+   Çözüm: "Internetten Oyna" ile linkten girin ya da normal bir ev modemi kullanın.
+
+Kim bilgisayara ulaşıyor, oyun penceresinde görünür: biri adresi açınca
+"Sayfa açıldı: 192.168..." satırı çıkar. Bu satır hiç çıkmıyorsa o cihaz
+bilgisayara ulaşamıyor demektir; sorun ağda, oyunda değil.
+
+KURALLAR (özet)
+- Herkese 21, başlayana 22 taş. Başlayan çekmeden bir taş atar.
+- Yandan aldığınız taşı aynı anda açışta ya da işlemede kullanırsınız.
+- Açış: tek seferde en az 101 puanlık seri/grup ya da en az 5 çift.
+  Seriyle açan çift indiremez; çiftle açan yeni seri kuramaz ama işleyebilir.
+- Seri: aynı renk, ardışık, en az 3 taş (12-13-1 olmaz).
+  Grup: aynı sayı, farklı renk, 3 ya da 4 taş.
+- Katlamalı (açıksa): sonra açan, rakibinin açtığından en az 1 fazlasıyla
+  açar; çiftte de 1 çift fazla gerekir. Eşine katlanmaz: siz 130 açtıysanız
+  eşiniz yine 101 ile açabilir.
+- Eşli (açıksa): karşılıklı oturanlar eştir. Biri bitince eşinin el cezası
+  silinir. Puanlar takım olarak toplanır, en düşük takım kazanır.
+- Okey atmak ya da masadaki bir pere işlenebilecek taşı atmak: +101 ceza.
+- Biten: -101. Açanlar elde kalan taşların toplamını, çiftle açanlar iki
+  katını, hiç açmayanlar 202 yer. Okey atarak ya da çiftten biterseniz
+  herkesin puanı iki katına çıkar. Kimse açmadan tek seferde tüm elini
+  indirip biten -202 alır, diğerleri 404 yer.
+- Deste biterse el puansız biter; sadece elinde okey olan okey başına
+  101 ceza yer. Bu el de el sayısına dahildir.
+- Seçilen el sayısı bitince toplamı en düşük olan kazanır.
