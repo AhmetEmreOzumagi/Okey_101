@@ -160,6 +160,79 @@
     return false;
   }
 
+  // Masadaki okeyi almak: okeyin yerine geçtiği taşı koyup okeyi ele alırsın.
+  // Seri ve gruplarda olur (çiftte olmaz). Sonuç: { meld: yeni per, okeyId: alınan okey }
+  function swapOkey(meld, id, okey) {
+    if (!meld || (meld.type !== 'run' && meld.type !== 'set')) return null;
+    var nt = natural(id, okey);
+    if (!nt) return null; // okeyle okey alınmaz
+    for (var i = 0; i < meld.tiles.length; i++) {
+      var w = meld.tiles[i];
+      if (!isWild(w, okey)) continue;
+      var rep = meld.rep[i];
+      if (rep.n !== nt.n || (meld.type === 'run' && rep.c !== nt.c)) continue;
+      var tiles = meld.tiles.slice();
+      tiles[i] = id;
+      var res = meld.type === 'run' ? tryRunOrdered(tiles, okey) : trySet(tiles, okey);
+      if (res) return { meld: res, okeyId: w, index: i };
+    }
+    return null;
+  }
+
+  function canSwap(id, melds, okey) {
+    for (var i = 0; i < melds.length; i++) if (swapOkey(melds[i], id, okey)) return true;
+    return false;
+  }
+
+  // "İşle" düğmesi için: eldeki taşları masaya otomatik işleme planı.
+  // Önce okey alınabilecek taşlar (okey ele geçer), sonra işlenebilen taşlar.
+  // keep: işlenmeyecek taşlar (ıstakada dizili perler); must: mutlaka işlenmesi gereken taş (yandan alınan)
+  // En az bir taş elde kalır (atıp bitirmek için).
+  function planIsle(hand, melds, okey, keep, must) {
+    keep = keep || [];
+    var h = hand.slice(), ms = melds.slice(), ops = [], progress = true, guard = 0;
+    var keepSet = {};
+    keep.forEach(function (id) { if (id !== must) keepSet[id] = true; });
+    while (progress && guard++ < 200) {
+      progress = false;
+      var i, j, id, res;
+      for (i = 0; i < h.length && !progress; i++) {
+        id = h[i];
+        if (isWild(id, okey)) continue;
+        for (j = 0; j < ms.length; j++) {
+          res = swapOkey(ms[j], id, okey);
+          if (res) {
+            res.meld.id = ms[j].id; res.meld.owner = ms[j].owner;
+            ops.push({ type: 'swap', tile: id, meld: ms[j].id, okeyId: res.okeyId });
+            ms[j] = res.meld;
+            h.splice(i, 1, res.okeyId);
+            progress = true;
+            break;
+          }
+        }
+      }
+      if (progress) continue;
+      for (i = 0; i < h.length && !progress; i++) {
+        id = h[i];
+        if (h.length <= 1) break;
+        if (isWild(id, okey) || keepSet[id]) continue;
+        for (j = 0; j < ms.length; j++) {
+          res = addToMeld(ms[j], id, okey);
+          if (res) {
+            res.id = ms[j].id; res.owner = ms[j].owner;
+            ops.push({ type: 'add', tile: id, meld: ms[j].id });
+            ms[j] = res;
+            h.splice(i, 1);
+            progress = true;
+            break;
+          }
+        }
+      }
+    }
+    var usedMust = must === null || must === undefined || ops.some(function (o) { return o.tile === must; });
+    return { ops: ops, melds: ms, hand: h, usedMust: usedMust };
+  }
+
   // Elde kalan taşların ceza değeri: okey 101, sahte okey okeyin sayısı, diğerleri sayısı.
   function tileValue(id, okey) {
     if (isWild(id, okey)) return 101;
@@ -485,6 +558,9 @@
     interpret: interpret,
     addToMeld: addToMeld,
     isLayable: isLayable,
+    swapOkey: swapOkey,
+    canSwap: canSwap,
+    planIsle: planIsle,
     tileValue: tileValue,
     handValue: handValue,
     scoreWin: scoreWin

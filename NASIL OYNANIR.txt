@@ -64,10 +64,19 @@ OYUN İÇİNDE
   dokunup alın. Yandan alınan taş ıstakada işe yarayacağı yere kendiliğinden
   yerleşir. Onunla açamazsanız "Geri bırak"a basın (ya da desteye dokunun),
   taş yerine döner.
-- İşlemek için taşı masadaki pere sürükleyin (ya da taşı seçip pere dokunun).
+- İşlemek için "İşle" düğmesine basın (Seri diz'in yanında): masaya işlenebilen
+  bütün taşlar kendiliğinden doğru perlere gider. Istakada dizili perleriniz
+  "İndir" için bırakılır. Tek tek işlemek isterseniz taşı masadaki pere sürükleyin
+  (ya da taşı seçip pere dokunun).
+- İşlenebilen ya da masadaki okeyi alabilen taşların altında yeşil bir çizgi olur.
+- Masadaki bir okeyin yerine geçen taş sizde varsa (açtıysanız) o taşı pere
+  koyup okeyi alırsınız: taşı o pere sürükleyin ya da "İşle"ye basın. Soldan
+  böyle bir taş gelirse onu alıp hemen okeyi alabilirsiniz; yandan alınan taş
+  işleniyorsa ana düğme "İşle" olur.
 - Atmak için taşı sağ alttaki "At" kutusuna sürükleyin (ya da seçip "At").
-- Elinizdeki okey ters (yeşil sırtı görünür) durur. Sahte okey, temsil ettiği
-  taş olarak ✿ işaretiyle görünür. Ortada sadece gösterge vardır.
+- Okey elinizde de masadaki perlerde de ters (yeşil sırtı görünür) durur.
+  Sahte okey, temsil ettiği taş olarak ✿ işaretiyle görünür. Ortada sadece
+  gösterge vardır. Kimin elinde kaç taş kaldığı görünmez.
 - Her hamle için süre vardır (varsayılan 30 sn). Süre dolarsa taş
   otomatik çekilip atılır.
 
@@ -98,6 +107,8 @@ bilgisayara ulaşamıyor demektir; sorun ağda, oyunda değil.
 KURALLAR (özet)
 - Herkese 21, başlayana 22 taş. Başlayan çekmeden bir taş atar.
 - Yandan aldığınız taşı aynı anda açışta ya da işlemede kullanırsınız.
+- Açtıktan sonra masadaki okeyin yerine geçen taşı koyup okeyi alabilirsiniz
+  (seri ve gruplarda; çiftlerde olmaz).
 - Açış: tek seferde en az 101 puanlık seri/grup ya da en az 5 çift.
   Seriyle açan çift indiremez; çiftle açan yeni seri kuramaz ama işleyebilir.
 - Seri: aynı renk, ardışık, en az 3 taş (12-13-1 olmaz).

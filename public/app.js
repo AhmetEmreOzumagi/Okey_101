@@ -23,6 +23,9 @@
   let deadline = 0, turnTotal = 30000, warned = false;
   let lastTurnMine = false;
   let freshId = null, freshUntil = 0;
+  // Masadan okey alınınca okey, yerine koyduğumuz taşın yuvasına gelsin
+  const swapSlots = new Map();
+  const swapFresh = new Map(); // ele gelen okey: id -> parlama bitişi
   let busy = 0;
 
   function emptySlots() { return new Array(SLOTS).fill(null); }
@@ -142,7 +145,7 @@
     const t = E.tileInfo(id);
     const wild = okey && E.isWild(id, okey);
     let c = 'tile' + (cls ? ' ' + cls : '');
-    if (wild && o.hand) return `<div class="${c} back" data-tile="${id}"></div>`;
+    if (wild && (o.hand || o.table)) return `<div class="${c} back" data-tile="${id}"></div>`;
     let num = t.n, col = t.c, mk = '';
     if (t.fake && okey) { num = okey.n; col = okey.c; mk = '<i class="mk">✿</i>'; }
     else if (t.fake) { return `<div class="${c} c3" data-tile="${id}"><span class="n" style="color:#2f8a55">✿</span></div>`; }
@@ -163,6 +166,7 @@
       rack.roundId = r.id;
       selected.clear();
       pendingSide = null;
+      swapSlots.clear();
       let saved = null;
       try { saved = JSON.parse(LS.get(rackKey(r.id)) || 'null'); } catch (e) {}
       rack.slots = Array.isArray(saved) && saved.length === SLOTS ? saved : E.arrangeRack(r.hand, r.okey, 'runs', COLS, 2);
@@ -172,7 +176,15 @@
     const present = new Set(r.hand);
     if (pendingSide !== null) present.add(pendingSide);
     for (let i = 0; i < SLOTS; i++) if (rack.slots[i] !== null && !present.has(rack.slots[i])) rack.slots[i] = null;
-    present.forEach((id) => { if (!rackHas(id)) placeSmart(id, r.okey); });
+    present.forEach((id) => {
+      if (rackHas(id)) return;
+      const at = swapSlots.get(id);
+      if (at !== undefined && rack.slots[at] === null) {
+        rack.slots[at] = id;
+        swapFresh.set(id, Date.now() + 2200);
+      } else placeSmart(id, r.okey);
+      swapSlots.delete(id);
+    });
     selected.forEach((id) => { if (!present.has(id)) selected.delete(id); });
     saveRack();
   }
@@ -243,6 +255,28 @@
     return { runs, pairs, pairShown, runValue, runTiles, pairCount: pairs.length, total };
   }
 
+  // =============== İşleme ===============
+  // Elde masaya işlenebilen ya da masadaki okeyi alabilen taşlar (altlarında işaret çıkar)
+  function islekSet() {
+    const r = view.round, set = new Set();
+    if (!r.melds.length) return set;
+    const ids = r.hand.concat(pendingSide !== null ? [pendingSide] : []);
+    ids.forEach((id) => {
+      if (E.isWild(id, r.okey)) return;
+      if (E.isLayable(id, r.melds, r.okey) || E.canSwap(id, r.melds, r.okey)) set.add(id);
+    });
+    return set;
+  }
+  // "İşle" düğmesinin yapacakları. Istakada dizili perler İndir için bırakılır
+  // (okey almak hariç: okey, yerine koyduğun taşın yerine gelir).
+  function islePlan(info) {
+    const r = view.round, opened = r.opened[view.me];
+    const hand = r.hand.concat(pendingSide !== null ? [pendingSide] : []);
+    const keep = [];
+    if (opened) (opened === 'pairs' ? info.pairs : info.runs).forEach((c) => c.tiles.forEach((id) => keep.push(id)));
+    return E.planIsle(hand, r.melds, r.okey, keep, pendingSide);
+  }
+
   // =============== Ne yapılabilir? ===============
   function plan() {
     const v = view, r = v.round, me = v.me, opened = r.opened[me];
@@ -253,6 +287,10 @@
     const runsOK = info.runs.length > 0 && ((info.runValue >= r.req.runs && leftAfterRuns >= 1) || (info.runTiles >= 20 && leftAfterRuns === 1)) && sideIn(info.runs);
     const pairsOK = info.pairCount >= r.req.pairs && info.total - info.pairCount * 2 >= 1 && sideIn(info.pairs);
     const p = { info, opened, mine, runsOK, pairsOK, primary: null, second: null, link: null, hint: '' };
+    const isle = opened && r.melds.length ? islePlan(info) : { ops: [], usedMust: false };
+    p.isle = isle;
+    p.isleOn = !!(mine && opened && (r.tphase === 'play' || pendingSide !== null) && isle.ops.length && isle.usedMust);
+    const isleBtn = () => ({ act: 'isle', label: 'İşle', sub: isle.ops.length > 1 ? isle.ops.length + ' taş' : '', on: true });
 
     // İndirilecek per(ler): seçim varsa seçim, yoksa ıstakada dizili perler
     let toMeld = null;
@@ -287,7 +325,9 @@
       p.primary = r.stockCount > 0 ? { act: 'draw', label: 'Çek', on: true } : { act: 'endStock', label: 'Eli bitir', on: true };
       p.second = { act: 'take', label: 'Yandan al', on: !!r.canTake };
     } else if (r.tphase === 'draw') {
-      p.primary = opened ? meldBtn() : openBtn();
+      // Yandan alınan taş işlenebiliyorsa (ya da masadaki okeyi alıyorsa) ana düğme "İşle"
+      const sideInMeld = toMeld && toMeld.some((g) => g.indexOf(pendingSide) >= 0);
+      p.primary = opened ? (p.isleOn && !sideInMeld ? isleBtn() : meldBtn()) : openBtn();
       p.second = { act: 'giveBack', label: 'Geri bırak', on: true };
       if (!opened && runsOK && pairsOK) p.link = { act: 'openPairs', label: 'Çiftle aç' };
       p.hint = opened ? 'Yandan aldığın taşı bir pere işle ya da yeni perle indir' : 'Yandan aldığın taşla aç';
@@ -323,10 +363,28 @@
         if (ids.length !== 1) { toast('Atmak için tek bir taş seç.'); return; }
         return discardTile(ids[0]);
       }
+      case 'isle': return doIsle();
       case 'sortRuns': rackKind = 'runs'; arrange('runs'); return;
       case 'sortPairs': rackKind = 'pairs'; arrange('pairs'); return;
     }
     return r;
+  }
+
+  function doIsle() {
+    const r = view.round;
+    if (!myTurn()) { toast('Sıra sende değil.'); return; }
+    if (!r.opened[view.me]) { toast('Taş işlemek için önce elini açmalısın.'); return; }
+    if (r.tphase !== 'play' && pendingSide === null) { toast('Önce taş çek.'); return; }
+    const p = islePlan(rackInfo());
+    if (!p.ops.length) { toast('İşlenecek taş yok.'); return; }
+    if (!p.usedMust) { toast('Yandan aldığın taş işlenmiyor. Onu bir perle indir ya da geri bırak.'); return; }
+    p.ops.forEach((o) => {
+      if (o.type !== 'swap') return;
+      const i = rack.slots.indexOf(o.tile);
+      if (i >= 0) swapSlots.set(o.okeyId, i);
+    });
+    selected.clear();
+    return api('batch', { ops: p.ops.map((o) => ({ type: o.type, tile: o.tile, meld: o.meld })), side: pendingSide !== null });
   }
 
   function arrange(kind) {
@@ -416,10 +474,18 @@
     if (!side && r.tphase !== 'play') { toast('Önce taş çek.'); return; }
     if (!r.opened[view.me]) { toast('Taş işlemek için önce elini açmalısın.'); return; }
     const m = r.melds.find((x) => x.id === meldId);
-    if (!m || !E.addToMeld(m, id, r.okey, at)) { toast('Bu taş bu pere işlenemez.'); return; }
-    if (!side && r.hand.length <= 1) { toast('Son taşı atarak bitirmelisin.'); return; }
+    const sw = m && E.swapOkey(m, id, r.okey);
+    if (!m || (!sw && !E.addToMeld(m, id, r.okey, at))) { toast('Bu taş bu pere işlenemez.'); return; }
+    if (!sw && !side && r.hand.length <= 1) { toast('Son taşı atarak bitirmelisin.'); return; }
     if (pendingSide !== null && !side) { toast('Önce yandan aldığın taşı kullan.'); return; }
     selected.delete(id);
+    if (sw) {
+      // Okeyin yerine geçen taşı koyup masadaki okeyi al
+      const i = rack.slots.indexOf(id);
+      if (i >= 0) swapSlots.set(sw.okeyId, i);
+      api('swap', { tile: id, meld: meldId, side });
+      return;
+    }
     api('add', { tile: id, meld: meldId, at, side });
   }
 
@@ -572,7 +638,7 @@
   function whoHTML(seat, side) {
     const v = view, r = v.round, p = v.seats[seat];
     if (!p) return '';
-    let bd = `<span>${r.handCounts[seat]} taş</span>`;
+    let bd = '';
     if (r.opened[seat] === 'runs') bd += `<span class="op">${r.openValue[seat]}</span>`;
     else if (r.opened[seat] === 'pairs') bd += `<span class="op">${r.openValue[seat]} çift</span>`;
     if (r.penalties[seat]) bd += `<span class="pen">+${r.penalties[seat]}</span>`;
@@ -645,9 +711,9 @@
       if (!ms.length) return;
       h += `<div class="mrow"><span class="who2 ${teamCls(seat)}">${esc(seatName(seat))}</span>`;
       ms.forEach((m) => {
-        const can = canAdd && E.addToMeld(m, probe, r.okey) ? ' can' : '';
+        const can = canAdd && (E.addToMeld(m, probe, r.okey) || E.swapOkey(m, probe, r.okey)) ? ' can' : '';
         h += `<div class="meld${seat === me ? ' mine' : ''}${can}" data-meld="${m.id}">` +
-          m.tiles.map((id, k) => tileHTML(id, 'mini', r.okey, { rep: m.rep[k] })).join('') + '</div>';
+          m.tiles.map((id, k) => tileHTML(id, 'mini', r.okey, { rep: m.rep[k], table: true })).join('') + '</div>';
       });
       h += '</div>';
     });
@@ -664,6 +730,7 @@
     const opened = r.opened[view.me];
     const now = Date.now();
     if (r.lastDrawn !== null && r.lastDrawn !== freshId) { freshId = r.lastDrawn; freshUntil = now + 2200; }
+    const islek = islekSet();
     let h = '';
     for (let i = 0; i < SLOTS; i++) {
       const id = rack.slots[i];
@@ -671,8 +738,9 @@
       if (id !== null) {
         let cls = '';
         if (selected.has(id)) cls += ' sel';
+        if (islek.has(id)) cls += ' islek';
         if (id === pendingSide) cls += ' side';
-        else if (id === freshId && now < freshUntil) cls += ' fresh';
+        else if ((id === freshId && now < freshUntil) || (swapFresh.get(id) || 0) > now) cls += ' fresh';
         t = tileHTML(id, cls.trim(), r.okey, { hand: true });
       }
       h += `<div class="slot" data-slot="${i}" style="grid-row:${Math.floor(i / COLS) + 1};grid-column:${(i % COLS) + 1}">${t}</div>`;
@@ -713,7 +781,8 @@
     h += b(p.primary, 'primary');
     h += b(p.second, '');
     if (p.link) h += `<button class="link" data-do="${p.link.act}">${esc(p.link.label)}</button>`;
-    h += '<div class="row"><button class="btn" data-do="sortRuns">Seri diz</button><button class="btn" data-do="sortPairs">Çift diz</button></div>';
+    h += `<div class="row"><button class="btn isle${p.isleOn && !busy ? ' on' : ''}" data-do="isle"${p.isleOn && !busy ? '' : ' disabled'}>İşle</button>` +
+      '<button class="btn" data-do="sortRuns">Seri diz</button><button class="btn" data-do="sortPairs">Çift diz</button></div>';
     $('#actions').innerHTML = h;
   }
 
@@ -795,12 +864,13 @@
     const h = '<h2>Kısa kurallar</h2><ul class="rules">' +
       '<li>Herkese 21, başlayana 22 taş. Başlayan çekmeden bir taş atar. Okey, göstergenin bir üstüdür.</li>' +
       '<li>Sıranda desteden çek ya da soldakinin attığını al. Yandan aldığın taşı o anda açışta ya da işlemede kullanırsın; kullanmazsan "Geri bırak" ile yerine döner.</li>' +
-      '<li>Açış: tek seferde en az 101 puanlık seri/grup ya da en az 5 çift. Taşlarını ıstakada boşluklarla dizince her perin değeri altında görünür; "Aç" hepsini birden indirir.</li>' +
+      '<li>Açış: tek seferde en az 101 puanlık seri/grup ya da en az 5 çift. Taşlarını ıstakada boşluklarla dizince toplamı ıstakanın sağ üstünde yazar; "Aç" hepsini birden indirir.</li>' +
       (st.katlamali ? '<li>Katlamalı: sonra açan, rakibinin açtığından en az 1 fazlasıyla açar (çiftte 1 çift fazla). Eşine katlanmaz.</li>' : '') +
       (st.mode === 'team' ? '<li>Eşli: karşılıklı oturanlar eş. Biri bitince eşinin el cezası silinir, puanlar takım olarak toplanır.</li>' : '') +
       '<li>Seri: aynı renk ardışık en az 3 taş (12-13-1 olmaz). Grup: aynı sayı farklı renk 3-4 taş.</li>' +
-      '<li>Elindeki okey ters görünür ve her taşın yerine geçer. Sahte okey (✿) okeyin yerine geçer.</li>' +
-      '<li>Açtıktan sonra taşı masadaki bir pere sürükleyerek işlersin.</li>' +
+      '<li>Okey her taşın yerine geçer; elinde de masada da ters görünür. Sahte okey (✿) okey olan taşın yerine geçer.</li>' +
+      '<li>Açtıktan sonra taşı masadaki bir pere sürükleyerek ya da "İşle" düğmesiyle işlersin. İşlenebilen ya da okey alabilen taşların altında yeşil çizgi olur.</li>' +
+      '<li>Masadaki bir okeyin yerine geçen taş sende varsa (açtıysan) o taşı pere koyup okeyi alırsın. Yandan gelen taşla da olur; "İşle" bunu kendisi yapar.</li>' +
       '<li>Okey atmak ya da işlenebilecek taşı atmak 101 ceza.</li>' +
       (st.turnSecs ? `<li>Her hamle için ${st.turnSecs} saniye var. Süre dolarsa taş otomatik çekilip atılır.</li>` : '') +
       '<li>Biten −101 alır. Açanlar elindeki taşların toplamını, çiftle açanlar iki katını, açmayanlar 202 ceza yer. Okey atarak ya da çiftten bitince puanlar ikiye katlanır.</li></ul>' +
@@ -967,7 +1037,7 @@
       const el = document.querySelector(`.meld[data-meld="${m.id}"]`);
       if (!el) return;
       if (!prev.has(m.id)) { el.style.animationDelay = (k++ * 70) + 'ms'; el.classList.add('pop'); }
-      else if (m.tiles.length > prev.get(m.id).length) {
+      else if (m.tiles.some((id) => prev.get(m.id).indexOf(id) < 0)) {
         const old = new Set(prev.get(m.id));
         m.tiles.forEach((id, i) => { if (!old.has(id)) { const t = el.children[i]; if (t) t.classList.add('pop'); } });
       }

@@ -238,7 +238,7 @@ function sideAction(s, seat, a) {
   const pile = r0.discards[left];
   if (!pile.length || r0.lastDiscardSeat !== left) fail('Yandan alınacak taş yok.');
   const id = pile[pile.length - 1];
-  if (a.type === 'add' && a.tile !== id) fail('Yandan aldığın taşı işlemelisin.');
+  if ((a.type === 'add' || a.type === 'swap') && a.tile !== id) fail('Yandan aldığın taşı işlemelisin.');
   const snap = JSON.parse(JSON.stringify(r0));
   r0.discards[left].pop();
   r0.hands[seat].push(id);
@@ -261,10 +261,47 @@ function sideAction(s, seat, a) {
 }
 
 // ---------- Hamleler ----------
+function meldIndex(r, meldId) {
+  const idx = r.melds.findIndex((m) => m.id === meldId);
+  if (idx < 0) fail('Per bulunamadı.');
+  return idx;
+}
+
+// Taş işleme (pere ekleme)
+function doAdd(r, seat, a) {
+  const id = a.tile;
+  if (!r.hands[seat].includes(id)) fail('Bu taş elinde yok.');
+  const idx = meldIndex(r, a.meld);
+  const res = E.addToMeld(r.melds[idx], id, r.okey, a.at);
+  if (!res) fail('Bu taş bu pere işlenemez.');
+  if (r.hands[seat].length - 1 < 1) fail('Son taşı atarak bitirmelisin.');
+  res.id = r.melds[idx].id;
+  res.owner = r.melds[idx].owner;
+  r.melds[idx] = res;
+  r.hands[seat] = r.hands[seat].filter((x) => x !== id);
+  if (r.took === id) r.took = null;
+  r.acts++;
+}
+
+// Masadaki okeyi alma: okeyin yerine geçtiği taş pere girer, okey ele geçer.
+function doSwap(r, seat, a) {
+  const id = a.tile;
+  if (!r.hands[seat].includes(id)) fail('Bu taş elinde yok.');
+  const idx = meldIndex(r, a.meld);
+  const res = E.swapOkey(r.melds[idx], id, r.okey);
+  if (!res) fail('Bu taş bu perdeki okeyin yerine geçmez.');
+  res.meld.id = r.melds[idx].id;
+  res.meld.owner = r.melds[idx].owner;
+  r.melds[idx] = res.meld;
+  r.hands[seat] = r.hands[seat].filter((x) => x !== id).concat([res.okeyId]);
+  if (r.took === id) r.took = null;
+  r.acts++;
+}
+
 function act(s, seat, a) {
   if (seat < 0) fail('Masada değilsin.');
   const type = a && a.type;
-  if (a && a.side && (type === 'open' || type === 'meld' || type === 'add')) return sideAction(s, seat, a);
+  if (a && a.side && (type === 'open' || type === 'meld' || type === 'add' || type === 'swap' || type === 'batch')) return sideAction(s, seat, a);
   switch (type) {
     case 'draw': {
       const r = requireTurn(s, seat, 'draw');
@@ -317,20 +354,45 @@ function act(s, seat, a) {
     case 'add': {
       const r = requireTurn(s, seat, 'play');
       if (!r.opened[seat]) fail('Taş işlemek için önce elini açmalısın.');
-      const id = a.tile;
-      if (!r.hands[seat].includes(id)) fail('Bu taş elinde yok.');
-      if (r.took !== null && id !== r.took) fail('Yandan aldığın taşı kullanmalısın.');
-      const idx = r.melds.findIndex((m) => m.id === a.meld);
-      if (idx < 0) fail('Per bulunamadı.');
-      const res = E.addToMeld(r.melds[idx], id, r.okey, a.at);
-      if (!res) fail('Bu taş bu pere işlenemez.');
-      if (r.hands[seat].length - 1 < 1) fail('Son taşı atarak bitirmelisin.');
-      res.id = r.melds[idx].id;
-      res.owner = r.melds[idx].owner;
-      r.melds[idx] = res;
-      r.hands[seat] = r.hands[seat].filter((x) => x !== id);
-      if (r.took === id) r.took = null;
-      r.acts++;
+      if (r.took !== null && a.tile !== r.took) fail('Yandan aldığın taşı kullanmalısın.');
+      doAdd(r, seat, a);
+      return;
+    }
+    case 'swap': {
+      const r = requireTurn(s, seat, 'play');
+      if (!r.opened[seat]) fail('Masadaki okeyi almak için önce elini açmalısın.');
+      if (r.took !== null && a.tile !== r.took) fail('Yandan aldığın taşı kullanmalısın.');
+      doSwap(r, seat, a);
+      addLog(s, `${nameOf(s, seat)} masadaki okeyi aldı.`);
+      return;
+    }
+    case 'batch': {
+      // "İşle" düğmesi: birden çok işleme / okey alma tek seferde; biri olmazsa hiçbiri olmaz.
+      const r = requireTurn(s, seat, 'play');
+      if (!r.opened[seat]) fail('Taş işlemek için önce elini açmalısın.');
+      const ops = Array.isArray(a.ops) ? a.ops : [];
+      if (!ops.length) fail('İşlenecek taş yok.');
+      if (ops.length > 30) fail('Çok fazla hamle.');
+      const snap = JSON.parse(JSON.stringify(r));
+      const took = r.took;
+      r.took = null;
+      let adds = 0, swaps = 0;
+      try {
+        for (const op of ops) {
+          if (op && op.type === 'add') { doAdd(r, seat, op); adds++; }
+          else if (op && op.type === 'swap') { doSwap(r, seat, op); swaps++; }
+          else fail('Geçersiz hamle.');
+        }
+        if (took !== null && r.hands[seat].includes(took)) fail('Yandan aldığın taşı kullanmalısın.');
+      } catch (e) {
+        Object.keys(r).forEach((k) => delete r[k]);
+        Object.assign(r, snap);
+        throw e;
+      }
+      const parts = [];
+      if (swaps) parts.push(swaps > 1 ? `masadan ${swaps} okey aldı` : 'masadaki okeyi aldı');
+      if (adds) parts.push(`${adds} taş işledi`);
+      addLog(s, `${nameOf(s, seat)} ${parts.join(', ')}.`);
       return;
     }
     case 'discard': {

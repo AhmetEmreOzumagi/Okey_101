@@ -10,6 +10,7 @@ Arkadaşlarla telefondan oynanan 4 kişilik **101 Okey**. Oyunu bir bilgisayar a
 - **QR kodla giriş:** bilgisayardaki sayfada çıkan kodu telefon kamerasıyla okutmak yeter.
 - **Oyun modları:** eşli / eşsiz, katlamalı (eşine katlanmaz), hamle süresi (20–60 sn ya da süresiz), el sayısı.
 - **Kolay ıstaka:** dizili perlerin toplamı ıstakanın köşesinde yazar; yetince tek dokunuşla açılır. "Seri diz" ve "Çift diz" perler arasında boşluk bırakarak dizer. Yandan alınan taş işe yarayacağı yere kendiliğinden yerleşir.
+- **İşle düğmesi:** işlenebilen taşlar işaretlenir, tek dokunuşla masaya işlenir; masadaki okey alınabiliyorsa onu da alır.
 - **Kopmaya dayanıklı:** telefonun bağlantısı koparsa kendiliğinden yeniden bağlanır. Oyun kapanıp açılsa da kaldığı yerden devam eder.
 - **Kurallar oyunda kontrol edilir:** açış puanı, işleme, okey ve ceza puanları, el sonu hesabı.
 - **Kurulum derdi yok:** sadece Node.js gerekir; `npm install` yok, ek paket yok.
@@ -73,9 +74,10 @@ Windows'taki dosyalar Node.js kurulu değilse kurmayı da teklif eder. İnternet
 - **Çekmek:** desteye dokunun ya da soldaki oyuncunun attığı taşa dokunup alın. Yandan aldığınız taşla açamazsanız **Geri bırak**.
 - **Dizmek:** taşı sürükleyerek ıstakada yerini değiştirin ya da **Seri diz** / **Çift diz**.
 - **Açmak:** ıstakanın sağ üstündeki toplam yetince yeşil olur (ör. `108 / 101`); **Aç**'a basınca dizili perlerin hepsi birden açılır. Açtıktan sonra **İndir** yeni dizdiğiniz perleri masaya koyar.
-- **İşlemek:** taşı masadaki pere sürükleyin ya da taşı seçip pere dokunun.
+- **İşlemek:** **İşle** düğmesi (Seri diz'in yanında) işlenebilen bütün taşları kendiliğinden doğru perlere koyar; ıstakada dizili perleriniz İndir için kalır. Tek tek işlemek için taşı masadaki pere sürükleyin ya da taşı seçip pere dokunun. İşlenebilen ya da masadaki okeyi alabilen taşların altında yeşil bir çizgi olur.
+- **Masadaki okeyi almak:** okeyin yerine geçen taş sizdeyse onu o pere sürükleyin ya da **İşle**'ye basın; okey elinize gelir. Soldan böyle bir taş gelirse alıp hemen okeyi alabilirsiniz.
 - **Atmak:** taşı sağ alttaki **At** kutusuna sürükleyin ya da seçip **At**.
-- Elinizdeki okey ters (yeşil sırtı görünür) durur; sahte okey, temsil ettiği taş olarak ✿ işaretiyle görünür. Ortada sadece gösterge vardır.
+- Okey elinizde de masadaki perlerde de ters (yeşil sırtı görünür) durur; sahte okey, temsil ettiği taş olarak ✿ işaretiyle görünür. Ortada sadece gösterge vardır. Kimin elinde kaç taş kaldığı görünmez.
 - Süre dolarsa taş otomatik çekilip atılır.
 - Telefon kapanırsa sayfayı yenileyin; başka telefona geçtiyseniz aynı adı yazmanız yeterli. Bağlanma adresi ve QR kod menüde (☰) de var.
 
@@ -86,6 +88,7 @@ Windows'taki dosyalar Node.js kurulu değilse kurmayı da teklif eder. İnternet
 - **Seri:** aynı renk, ardışık, en az 3 taş (12-13-1 olmaz). **Grup:** aynı sayı, farklı renk, 3 ya da 4 taş.
 - **Açış:** tek seferde en az **101 puanlık** seri/grup ya da en az **5 çift**. Seriyle açan çift indiremez; çiftle açan yeni seri kuramaz ama işleyebilir.
 - Yandan aldığınız taşı aynı anda açışta ya da işlemede kullanmanız gerekir.
+- Açtıktan sonra masadaki bir okeyin yerine geçen taşı koyup okeyi alabilirsiniz (seri ve gruplarda; çiftlerde olmaz). Yandan gelen taşla da olur.
 - **Katlamalı** (açıksa): sonra açan, rakibinin açtığından en az 1 fazlasıyla açar; çiftte de 1 çift fazla gerekir. **Eşine katlanmaz:** siz 130 açtıysanız eşiniz yine 101 ile açabilir.
 - **Eşli** (açıksa): karşılıklı oturanlar eştir. Biri bitince eşinin el cezası silinir. Puanlar takım olarak toplanır.
 - Okey atmak ya da masadaki bir pere işlenebilecek taşı atmak: **+101 ceza**.

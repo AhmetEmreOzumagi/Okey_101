@@ -47,8 +47,21 @@ function botTurn(s, seat, stats) {
           tryAct(s, seat, { type: 'open', side: true, mode: 'runs', melds: sug.melds }, stats);
         }
       } else if (r.hands[seat].length >= 1) {
-        for (const m of r.melds) {
-          if (E.addToMeld(m, side, okey) && tryAct(s, seat, { type: 'add', side: true, tile: side, meld: m.id }, stats)) break;
+        const pl = E.planIsle(r.hands[seat].concat([side]), r.melds, okey, [], side);
+        if (pl.ops.length && Math.random() < 0.6) {
+          // "İşle" düğmesi: yandan taşla birlikte toplu işleme / okey alma
+          const ops = pl.ops.map((o) => ({ type: o.type, tile: o.tile, meld: o.meld }));
+          const bad = Math.random() < 0.1;
+          if (bad) ops.push({ type: 'add', tile: r.hands[seat][0], meld: -1 }); // geçersiz: hepsi geri alınmalı
+          const ok = tryAct(s, seat, { type: 'batch', side: true, ops }, stats);
+          // telefonun hesapladığı plan sunucuda her zaman geçmeli
+          if (!bad && pl.usedMust && !ok) throw new Error('İşle planı (yandan) reddedildi');
+          if (bad && ok) throw new Error('Geçersiz hamleli İşle kabul edildi');
+        } else {
+          for (const m of r.melds) {
+            if (E.swapOkey(m, side, okey) && tryAct(s, seat, { type: 'swap', side: true, tile: side, meld: m.id }, stats)) break;
+            if (E.addToMeld(m, side, okey) && tryAct(s, seat, { type: 'add', side: true, tile: side, meld: m.id }, stats)) break;
+          }
         }
       }
       if (s.phase !== 'playing') return;
@@ -91,6 +104,21 @@ function botTurn(s, seat, stats) {
     } else {
       const p = E.suggestPairs(hand(), okey);
       for (const m of p.pairs) if (hand().length - 2 >= 1) tryAct(s, seat, { type: 'meld', melds: [m] }, stats);
+    }
+    if (Math.random() < 0.5) {
+      const pl = E.planIsle(hand(), s.round.melds, okey, [], null);
+      if (pl.ops.length) {
+        const ops = pl.ops.map((o) => ({ type: o.type, tile: o.tile, meld: o.meld }));
+        const bad = Math.random() < 0.1;
+        if (bad) ops.push({ type: 'add', tile: -5, meld: s.round.melds[0].id }); // geçersiz: hepsi geri alınmalı
+        const ok = tryAct(s, seat, { type: 'batch', ops }, stats);
+        if (!bad && !ok) throw new Error('İşle planı reddedildi');
+        if (bad && ok) throw new Error('Geçersiz hamleli İşle kabul edildi');
+      }
+    }
+    for (const id of hand().slice()) {
+      const m = s.round.melds.find((x) => E.swapOkey(x, id, okey));
+      if (m) tryAct(s, seat, { type: 'swap', tile: id, meld: m.id }, stats);
     }
     let progress = true;
     while (progress && hand().length > 1) {
