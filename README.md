@@ -10,7 +10,7 @@ Arkadaşlarla telefondan oynanan 4 kişilik **101 Okey**. Oyunu bir bilgisayar a
 - **QR kodla giriş:** bilgisayardaki sayfada çıkan kodu telefon kamerasıyla okutmak yeter.
 - **2-3 kişi de olur:** boş yerlere bot oturur, botlar kendiliğinden oynar. Sonradan gelen arkadaş bir botun yerine geçer.
 - **Oyun modları:** eşli / eşsiz, katlamalı (eşine katlanmaz), hamle süresi (20–60 sn ya da süresiz), el sayısı.
-- **Kolay ıstaka:** dizili perlerin toplamı ıstakanın köşesinde yazar; yetince tek dokunuşla açılır. "Seri diz" ve "Çift diz" perler arasında boşluk bırakarak dizer. Yandan alınan taş işe yarayacağı yere kendiliğinden yerleşir.
+- **Kolay ıstaka:** dizili perlerin toplamı ıstakanın köşesinde yazar; yetince tek dokunuşla açılır. "Seri diz" ve "Çift diz" perler arasında boşluk bırakarak dizer. Açtıktan sonra elde kalan puan, sol üstte toplam puanın görünür.
 - **İşle düğmesi:** işlenebilen taşlar işaretlenir, tek dokunuşla masaya işlenir; masadaki okey alınabiliyorsa onu da alır.
 - **Kopmaya dayanıklı:** telefonun bağlantısı koparsa kendiliğinden yeniden bağlanır. Oyun kapanıp açılsa da kaldığı yerden devam eder.
 - **Kurallar oyunda kontrol edilir:** açış puanı, işleme, okey ve ceza puanları, el sonu hesabı.
@@ -94,7 +94,7 @@ Windows'taki dosyalar Node.js kurulu değilse kurmayı da teklif eder. Mac'te **
 - **Eşli** (açıksa): karşılıklı oturanlar eştir. Biri bitince eşinin el cezası silinir. Puanlar takım olarak toplanır.
 - Okey atmak ya da masadaki bir pere işlenebilecek taşı atmak: **+101 ceza**.
 - **El sonu:** biten -101 alır. Açanlar elde kalan taşların toplamını, çiftle açanlar iki katını, hiç açmayanlar 202 yazar. Okey atarak ya da çiftten bitilirse herkesin puanı iki katına çıkar. Kimse açmadan tek seferde tüm elini indirip biten -202 alır, diğerleri 404 yazar.
-- Ortada taş kalmayınca son taşı çeken oyuncu taşını atar atmaz el biter (sıradaki yandan alamaz). El puansız biter; sadece elinde okey kalan okey başına 101 ceza yer.
+- Ortada taş kalmayınca son taşı çeken oyuncu taşını atar atmaz el biter (sıradaki yandan alamaz). Açanlar elinde kalan taşların toplamını, çiftle açanlar iki katını, açmayanlar 202 yazar; elde kalan okey 101 sayılır.
 - Seçilen el sayısı bitince toplamı **en düşük** olan (eşlide en düşük takım) kazanır.
 
 ## İnternet linki nasıl çalışıyor?

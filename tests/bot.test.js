@@ -136,3 +136,54 @@ test('bot perini bozmaz, işe yaramayan küçük taşı atar', () => {
   r.melds = [Object.assign(E.interpret([T(2, 3), T(2, 4), T(2, 5)], r.okey, 'runs'), { id: 1, owner: 2 })];
   assert.equal(B.chooseDiscard(s, 1), T(3, 13));
 });
+
+test('botun elinde okey ve tek taş kalınca okeyi işleyip biter', () => {
+  const E = require('../public/engine.js');
+  const T = (c, n, copy = 0) => c * 26 + (n - 1) * 2 + copy;
+  const s = G.create();
+  G.join(s, 'İnsan', null, off, 0);
+  G.lobbyAction(s, 0, { type: 'fillBots' }, off);
+  G.lobbyAction(s, 0, { type: 'start' }, off);
+  const r = s.round;
+  r.okey = { c: 3, n: 1 };
+  const OK = T(3, 1);
+  r.melds = [Object.assign(E.interpret([T(2, 3), T(2, 4), T(2, 5)], r.okey, 'runs'), { id: 1, owner: 2 })];
+  r.opened[1] = 'runs';
+  r.hands[1] = [OK, T(0, 9)]; // kırmızı 9 hiçbir yere işlenmiyor
+  r.turn = 1; r.tphase = 'play';
+  let now = Date.now();
+  B.step(s, now);
+  B.step(s, now + 5000);
+  assert.equal(s.phase, 'roundEnd');
+  assert.equal(s.round.result.winner, 1);
+  // sadece okey kalırsa okeyi atarak biter (puanlar iki kat)
+  const s2 = G.create();
+  G.join(s2, 'İnsan', null, off, 0);
+  G.lobbyAction(s2, 0, { type: 'fillBots' }, off);
+  G.lobbyAction(s2, 0, { type: 'start' }, off);
+  const r2 = s2.round;
+  r2.okey = { c: 3, n: 1 };
+  r2.melds = [Object.assign(E.interpret([T(2, 3), T(2, 4), T(2, 5)], r2.okey, 'runs'), { id: 1, owner: 2 })];
+  r2.opened[1] = 'runs';
+  r2.hands[1] = [OK, T(2, 6)]; // mavi 6 işlenir, okey kalır
+  r2.turn = 1; r2.tphase = 'play';
+  B.step(s2, now);
+  B.step(s2, now + 5000);
+  assert.equal(s2.phase, 'roundEnd');
+  assert.equal(s2.round.result.winner, 1);
+  assert.equal(s2.round.result.lastOkey, true);
+});
+
+test('bot küçük taşı atar: yanında komşusu olmayan büyük taşı tutar', () => {
+  const T = (c, n, copy = 0) => c * 26 + (n - 1) * 2 + copy;
+  const s = G.create();
+  G.join(s, 'İnsan', null, off, 0);
+  G.lobbyAction(s, 0, { type: 'fillBots' }, off);
+  G.lobbyAction(s, 0, { type: 'start' }, off);
+  const r = s.round;
+  r.okey = { c: 3, n: 1 };
+  r.melds = [];
+  // kırmızı 4-5-6 per; mavi 3 (mavi 5 ile zayıf komşu), siyah 13 tek; atılacak: mavi 3
+  r.hands[1] = [T(0, 4), T(0, 5), T(0, 6), T(2, 3), T(2, 5), T(3, 13)];
+  assert.equal(B.chooseDiscard(s, 1), T(2, 3));
+});

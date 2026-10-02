@@ -370,13 +370,16 @@ test('çiftten açma ve karışmama', () => {
   assert.throws(() => G.act(s, 0, { type: 'meld', melds: [[T(1, 9), T(1, 10), T(1, 11)]] }), /çift/);
 });
 
-test('deste biterse puansız el, okey tutan 101', () => {
+test('deste biterse: açan kalanını, çiftle açan iki katını, açmayan 202 yazar', () => {
   const { s } = setupGame();
-  rig(s, [[T(1, 1), T(1, 2)], [WILD, T(2, 1)], [T(2, 3)], [T(2, 4)]], { stock: 0 });
+  rig(s, [[T(1, 1), T(1, 2)], [WILD, T(2, 1)], [T(2, 3), T(2, 9)], [T(2, 4)]], { stock: 0 });
+  s.round.opened = [null, 'runs', 'pairs', null];
   // ortada taş yokken atılan taşla el hemen biter; sıradaki yandan alamaz
   G.act(s, 0, { type: 'discard', tile: T(1, 1) });
   assert.equal(s.phase, 'roundEnd');
-  assert.deepEqual(s.round.result.base, [0, 101, 0, 0]);
+  // 0 açmadı: 202; 1 seriyle açtı: okey 101 + 1; 2 çiftle açtı: (3+9)*2; 3 açmadı: 202
+  assert.deepEqual(s.round.result.base, [202, 102, 24, 202]);
+  assert.deepEqual(s.history[0].total, [202, 102, 24, 202]);
   assert.equal(s.history[0].counted, true);
   // sonraki eli bir sonraki oyuncu başlatır (biten olmasa da)
   assert.equal(s.startSeat, 1);

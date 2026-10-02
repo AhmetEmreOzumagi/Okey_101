@@ -315,6 +315,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .who .bd .pen { background: rgba(224, 82, 82, .3); color: #ffc9c9; }
 .who .bd .mate { background: rgba(255, 255, 255, .16); }
 .who .bd .bot { background: rgba(127, 196, 236, .22); color: #cfe9f8; }
+.who .bd .tot { background: rgba(0, 0, 0, .4); color: #f3e7c7; }
 .chip-top .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
 /* Orta: deste, gösterge, durum */
@@ -364,7 +365,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 #timebar i { display: block; height: 100%; width: 0; background: var(--brass); transition: width .25s linear, background .3s; }
 #timebar.low i { background: var(--danger); }
 #rack {
-  margin-top: 4px;
+  margin-top: 4px; justify-self: center; align-self: start; max-width: 100%;
   display: grid; grid-template-columns: repeat(15, calc(var(--tw) + 3px)); grid-template-rows: repeat(2, calc(var(--th) + 8px));
   justify-content: center; align-content: start;
   border-radius: 10px; padding: 3px 4px 2px;
@@ -376,6 +377,14 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   touch-action: none; position: relative;
 }
 .slot { display: flex; align-items: flex-start; justify-content: center; padding-top: 1px; position: relative; }
+/* Taş konabilecek yuvalar: boşken hafif oyuk olarak görünür */
+.slot::after {
+  content: ""; position: absolute; left: 1.5px; right: 1.5px; top: 1px; height: var(--th); z-index: 0; pointer-events: none;
+  border-radius: calc(var(--tw) * .16);
+  background: rgba(0, 0, 0, .1);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .22), inset 0 2px 3px rgba(0, 0, 0, .22), 0 1px 0 rgba(255, 255, 255, .1);
+}
+.slot .tile { z-index: 1; }
 .slot.hot::before { content: ""; position: absolute; left: 1px; right: 1px; top: 0; height: var(--th); border-radius: 8px; border: 2px solid var(--brass); }
 .slot .tile { transition: transform .22s var(--spring), box-shadow .2s; }
 .slot .tile.sel { transform: translateY(-16%); box-shadow: inset 0 1px 0 #fff, 0 0 0 2.5px #fff, 0 8px 12px rgba(0, 0, 0, .5); }
@@ -405,6 +414,15 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .rtotal b { font-size: 15px; font-weight: 800; }
 .rtotal small { opacity: .75; font-size: 11px; }
 .rtotal.ok { color: var(--ok); border-color: #4c9a5f; }
+.rscore {
+  position: absolute; top: -15px; left: 14px; z-index: 5; pointer-events: none;
+  background: linear-gradient(180deg, #3a2611, #24150a); color: #f3e7c7;
+  border: 1.5px solid rgba(227, 176, 75, .55); border-radius: 999px; padding: 1px 11px;
+  font-size: 12px; line-height: 18px; white-space: nowrap; box-shadow: 0 3px 8px rgba(0, 0, 0, .45);
+  font-variant-numeric: tabular-nums;
+}
+.rscore b { font-size: 14px; font-weight: 800; }
+.rscore small { opacity: .75; font-size: 11px; }
 
 /* İşlem düğmeleri */
 #actions { margin-top: 4px; display: flex; flex-direction: column; gap: 5px; justify-content: center; min-height: 0; }

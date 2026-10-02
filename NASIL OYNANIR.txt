@@ -71,11 +71,13 @@ OYUN İÇİNDE
 - Istakanın sağ üstünde dizili perlerinizin toplamı yazar (ör. 108 / 101,
   yetince yeşil olur). Yetince "Aç"a basmanız yeter,
   dizili perlerin hepsi birden açılır. Açtıktan sonra "İndir" yeni dizdiğiniz
-  perleri masaya koyar.
+  perleri masaya koyar; sağ üstte artık elinizde kalan taşların puanı yazar
+  (biri biterse yazılacak ceza). Sol üstte toplam puanınız görünür.
+- Istakada taş konabilecek yerler oyuk olarak görünür.
 - Sıranız gelince desteye dokunup çekin ya da soldaki oyuncunun attığı taşa
-  dokunup alın. Yandan alınan taş ıstakada işe yarayacağı yere kendiliğinden
-  yerleşir. Onunla açamazsanız "Geri bırak"a basın (ya da desteye dokunun),
-  taş yerine döner.
+  dokunup alın. Çektiğiniz ya da yandan aldığınız taş ıstakanın sağ altında
+  boş bir yere gelir; istediğiniz yere kendiniz sürükleyin. Yandan aldığınız
+  taşla açamazsanız "Geri bırak"a basın (ya da desteye dokunun), taş yerine döner.
 - İşlemek için "İşle" düğmesine basın (Seri diz'in yanında): masaya işlenebilen
   bütün taşlar kendiliğinden doğru perlere gider. Istakada dizili perleriniz
   "İndir" için bırakılır. Tek tek işlemek isterseniz taşı masadaki pere sürükleyin
@@ -138,6 +140,7 @@ KURALLAR (özet)
   herkesin puanı iki katına çıkar. Kimse açmadan tek seferde tüm elini
   indirip biten -202 alır, diğerleri 404 yer.
 - Ortada taş kalmayınca son taşı çeken oyuncu taşını atar atmaz el biter
-  (sıradaki yandan alamaz). El puansız biter; sadece elinde okey kalan okey
-  başına 101 ceza yer. Bu el de el sayısına dahildir.
+  (sıradaki yandan alamaz). Kimse bitiremediği için: açanlar elinde kalan
+  taşların toplamını, çiftle açanlar iki katını, açmayanlar 202 yazar. Elde
+  kalan okey 101 sayılır. Bu el de el sayısına dahildir.
 - Seçilen el sayısı bitince toplamı en düşük olan kazanır.

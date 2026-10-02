@@ -183,37 +183,17 @@
       if (at !== undefined && rack.slots[at] === null) {
         rack.slots[at] = id;
         swapFresh.set(id, Date.now() + 2200);
-      } else placeSmart(id, r.okey);
+      } else placeFree(id);
       swapSlots.delete(id);
     });
     selected.forEach((id) => { if (!present.has(id)) selected.delete(id); });
     saveRack();
   }
 
-  // Yeni gelen taşı, değerini artıracağı bir grubun yanına koyar; yoksa sona.
-  function placeSmart(id, okey) {
+  // Yeni gelen (çekilen ya da yandan alınan) taş: ıstakada boş bir yere, sağ alta konur.
+  // Pere kendiliğinden yerleştirilmez; oyuncu istediği yere kendisi sürükler.
+  function placeFree(id) {
     const s = rack.slots;
-    const kind = (view.round.opened[view.me] === 'pairs' || rackKind === 'pairs') ? 'pairs' : 'runs';
-    let best = null;
-    for (let row = 0; row < 2; row++) {
-      let c = 0;
-      while (c < COLS) {
-        if (s[row * COLS + c] === null) { c++; continue; }
-        const st = c, seg = [];
-        while (c < COLS && s[row * COLS + c] !== null) { seg.push(s[row * COLS + c]); c++; }
-        const en = c;
-        const base = E.segmentChunks(seg, okey, kind).score;
-        if (en < COLS && (en + 1 >= COLS || s[row * COLS + en + 1] === null)) {
-          const g = E.segmentChunks(seg.concat([id]), okey, kind).score - base;
-          if (g > 0 && (!best || g > best.g)) best = { g, idx: row * COLS + en };
-        }
-        if (st > 0 && (st - 2 < 0 || s[row * COLS + st - 2] === null)) {
-          const g = E.segmentChunks([id].concat(seg), okey, kind).score - base;
-          if (g > 0 && (!best || g > best.g)) best = { g, idx: row * COLS + st - 1 };
-        }
-      }
-    }
-    if (best) { s[best.idx] = id; return best.idx; }
     const free = (i) => s[i] === null;
     for (let i = SLOTS - 1; i >= 0; i--) {
       const c = i % COLS;
@@ -358,7 +338,7 @@
         if (pendingSide !== null) giveBack(true);
         return api('draw');
       case 'endStock':
-        return confirmBox('El bitsin mi?', 'Deste bitti. El puansız biter, sadece elinde okey olan 101 ceza yer.', 'Eli bitir').then((y) => y && api('endStock'));
+        return confirmBox('El bitsin mi?', 'Deste bitti. Açanlar elindeki taşların toplamını (çiftle açan iki katını), açmayanlar 202 yazar.', 'Eli bitir').then((y) => y && api('endStock'));
       case 'take': return takeSide();
       case 'giveBack': return giveBack();
       case 'openRuns': return openFromRack('runs');
@@ -428,22 +408,12 @@
     if (!r.canTake || r.sideTile === null) { toast('Alınacak taş yok.'); return; }
     if (pendingSide !== null) return;
     const from = rectOf($('#pile-bl .tile'));
-    const rects = captureRects();
     pendingSide = r.sideTile;
-    placeSmart(pendingSide, r.okey);
-    // Taş bir pere oturmadıysa ve yeniden dizince oturuyorsa ıstakayı yeniden diz
-    const kind = r.opened[view.me] === 'pairs' ? 'pairs' : (rackKind === 'pairs' && !r.opened[view.me] ? 'pairs' : 'runs');
-    const inChunk = (slots) => E.rackChunks(slots, COLS, r.okey, kind).some((c) => c.tiles.indexOf(pendingSide) >= 0);
-    let rearranged = false;
-    if (!inChunk(rack.slots)) {
-      const alt = E.arrangeRack(r.hand.concat([pendingSide]), r.okey, kind, COLS, 2);
-      if (inChunk(alt)) { rack.slots = alt; rearranged = true; }
-    }
+    placeFree(pendingSide); // oyuncu istediği yere kendisi koyar
     saveRack();
     render();
-    if (rearranged) slideRack(rects);
     const el = tileEl(pendingSide);
-    if (el) fly(tileHTML(pendingSide, '', r.okey, { hand: true }), from, el, { hide: true, delay: rearranged ? 120 : 0 });
+    if (el) fly(tileHTML(pendingSide, '', r.okey, { hand: true }), from, el, { hide: true });
   }
 
   function giveBack(silent) {
@@ -664,6 +634,7 @@
     if (r.penalties[seat]) bd += `<span class="pen">+${r.penalties[seat]}</span>`;
     if (isTeam() && seat === (v.me + 2) % 4) bd += '<span class="mate">eş</span>';
     if (p.bot) bd += '<span class="bot">bot</span>';
+    if (v.completed > 0) bd += `<span class="tot">${v.totals[seat]} puan</span>`;
     const turn = v.phase === 'playing' && r.turn === seat ? ' turn' : '';
     const av = `<div class="av${p.bot ? ' bot' : ''}">${avatarText(p)}<svg viewBox="0 0 36 36"><circle class="tr" cx="18" cy="18" r="16"/><circle class="pg" cx="18" cy="18" r="16" pathLength="100"/></svg>${p.online ? '' : '<span class="off"></span>'}</div>`;
     if (side) return `<div class="who ${teamCls(seat)}${turn}" data-seat="${seat}">${av}<div class="nm">${esc(p.name)}</div><div class="bd">${bd}</div></div>`;
@@ -787,7 +758,16 @@
       main = `<b>${info.runValue}</b>` + (need ? `<small> / ${need}</small>` : '');
       if (need && info.runValue >= need) cls = ' ok';
     }
-    return `<div class="rtotal${cls}">${main}</div>`;
+    if (opened) {
+      // Açtıktan sonra: elde kalan taşların cezası (biri biterse yazılacak puan)
+      const ids = r.hand.concat(pendingSide !== null ? [pendingSide] : []);
+      const hv = E.handValue(ids, r.okey);
+      main = `<small>Elde </small><b>${hv}</b>` + (opened === 'pairs' ? '<small> ×2</small>' : '');
+      cls = '';
+    }
+    let out = `<div class="rtotal${cls}">${main}</div>`;
+    if (view.completed > 0) out += `<div class="rscore"><small>Puanın </small><b>${view.totals[view.me]}</b></div>`;
+    return out;
   }
 
   function renderActions() {
@@ -825,7 +805,8 @@
       order.forEach((i, k) => {
         const p = v.seats[i];
         let durum = i === res.winner ? 'Bitti' : r.opened[i] === 'runs' ? `Açtı (${r.openValue[i]})` : r.opened[i] === 'pairs' ? `Çift (${r.openValue[i]})` : 'Açmadı';
-        if (res.kind !== 'win' && res.base && res.base[i] > 0) durum += `<div class="why">elinde okey kaldı: +${res.base[i]}</div>`;
+        if (res.kind === 'allPairs' && res.base && res.base[i] > 0) durum += `<div class="why">elinde okey kaldı: +${res.base[i]}</div>`;
+        else if (res.kind === 'stock' && r.opened[i] === 'pairs') durum += '<div class="why">kalan taşlar ×2</div>';
         const hand = sortForShow(res.hands[i], r.okey).map((id) => tileHTML(id, 'tiny', r.okey, { hand: true })).join('');
         h += `<tr class="${i === res.winner ? 'win' : ''}"><td>${team ? `<span class="tdot ${teamCls(i)}"></span>` : ''}<b>${esc(p ? p.name : '')}</b></td><td>${durum}</td><td><div class="handline">${hand}</div></td>` +
           `<td class="num">${res.penalties[i] ? '+' + res.penalties[i] : ''}</td><td class="num ${res.total[i] < 0 ? 'neg' : 'pos'}">${res.total[i]}</td><td class="num">${v.totals[i]}</td></tr>`;
@@ -875,7 +856,7 @@
       });
       h += '<tr class="team"><td>Toplam</td>' + v.totals.map((n) => `<td class="num">${n}</td>`).join('') +
         (team ? `<td class="num">${v.teamTotals[0]}</td><td class="num">${v.teamTotals[1]}</td>` : '') + '</tr></table>';
-      h += `<p class="sub" style="margin-top:10px">${v.completed} / ${v.settings.rounds} el oynandı. En düşük puan kazanır. Deste bitince el puansız biter; sadece elinde okey kalan 101 yazar.</p>`;
+      h += `<p class="sub" style="margin-top:10px">${v.completed} / ${v.settings.rounds} el oynandı. En düşük puan kazanır. Deste bitince açan elindeki taşların toplamını (çiftle açan iki katını), açmayan 202 yazar.</p>`;
     }
     h += '<div class="btns"><button class="btn primary" id="closeM">Kapat</button></div>';
     modal(h, (m) => { m.querySelector('#closeM').onclick = closeModal; });
@@ -892,7 +873,7 @@
       '<li>Seri: aynı renk ardışık en az 3 taş (12-13-1 olmaz). Grup: aynı sayı farklı renk 3-4 taş.</li>' +
       '<li>Okey her taşın yerine geçer; elinde de masada da ters görünür. Sahte okey (✿) okey olan taşın yerine geçer.</li>' +
       '<li>Seriyle açtıysan ve masada çiftle açan varsa, çiftlerini de indirebilirsin.</li>' +
-      '<li>Ortada taş kalmayınca son taşı atanla el biter; sadece elinde okey kalan 101 yazar.</li>' +
+      '<li>Ortada taş kalmayınca son taşı atanla el biter: açan elindeki taşların toplamını (çiftle açan iki katını), açmayan 202 yazar. Elde kalan okey 101 sayılır.</li>' +
       '<li>Açtıktan sonra taşı masadaki bir pere sürükleyerek ya da "İşle" düğmesiyle işlersin. İşlenebilen ya da okey alabilen taşların altında yeşil çizgi olur.</li>' +
       '<li>Masadaki bir okeyin yerine geçen taş sende varsa (açtıysan) o taşı pere koyup okeyi alırsın. Yandan gelen taşla da olur; "İşle" bunu kendisi yapar.</li>' +
       '<li>Okey atmak ya da işlenebilecek taşı atmak 101 ceza.</li>' +

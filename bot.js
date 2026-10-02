@@ -95,8 +95,11 @@ function chooseDiscard(s, seat) {
     }
     return best;
   };
-  pool.sort((x, y) => use(x) - use(y) || nat(x).n - nat(y).n);
-  return pool[0];
+  // Perlere girmeyen ve yanında güçlü komşusu olmayan taşlar arasından en küçüğü atılır
+  const weak = pool.filter((id) => use(id) < 2);
+  const list = weak.length ? weak : pool;
+  list.sort((x, y) => nat(x).n - nat(y).n || use(x) - use(y));
+  return list[0];
 }
 
 function drawStep(s, seat) {
@@ -154,6 +157,16 @@ function playStep(s, seat) {
   if (opened) {
     const pl = E.planIsle(hand(), s.round.melds, okey, [], null);
     if (pl.ops.length) tryAct(s, seat, { type: 'batch', ops: pl.ops.map((o) => ({ type: o.type, tile: o.tile, meld: o.meld })) });
+    // Bitirmeye bir adım kaldıysa okeyi de işle: elde tek taş kalsın, onu atıp bitsin
+    // (elde sadece okeyler varsa biri kalır ve okey atarak biter)
+    const others = hand().filter((id) => !E.isWild(id, okey));
+    if (others.length <= 1) {
+      for (const w of hand().filter((id) => E.isWild(id, okey))) {
+        if (hand().length <= 1) break;
+        const m = s.round.melds.find((x) => E.addToMeld(x, w, okey, 'end'));
+        if (m) tryAct(s, seat, { type: 'add', tile: w, meld: m.id, at: 'end' });
+      }
+    }
   }
   if (!playing()) return;
   G.act(s, seat, { type: 'discard', tile: chooseDiscard(s, seat) });

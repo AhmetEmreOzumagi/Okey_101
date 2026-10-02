@@ -489,8 +489,16 @@ function finishWin(s, w, lastTile) {
 
 function endRoundNoWin(s, kind) {
   const r = s.round;
-  const base = r.hands.map((h) => h.filter((id) => E.isWild(id, r.okey)).length * 101);
-  const note = kind === 'stock' ? 'Deste bitti, el puansız bitti.' : 'Herkes çiftten açtı, el puansız bitti.';
+  let base, note;
+  if (kind === 'stock') {
+    // Deste bitti, kimse bitiremedi: açan elindeki taşların toplamını (çiftle açan iki katını),
+    // açmayan 202 yazar. Elde kalan okey 101 sayılır.
+    base = r.hands.map((h, i) => (r.opened[i] === 'runs' ? E.handValue(h, r.okey) : r.opened[i] === 'pairs' ? E.handValue(h, r.okey) * 2 : 202));
+    note = 'Deste bitti, kimse bitiremedi.';
+  } else {
+    base = r.hands.map((h) => h.filter((id) => E.isWild(id, r.okey)).length * 101);
+    note = 'Herkes çiftten açtı, el puansız bitti.';
+  }
   closeRound(s, { kind, winner: -1, base, lastOkey: false, elden: false, note });
 }
 
