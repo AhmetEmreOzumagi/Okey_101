@@ -80,14 +80,38 @@
       pch = Math.round(Math.max(56, Math.min(vh * (big ? .2 : .25), big ? 150 : 112)));
       sh = Math.round(Math.max(24, Math.min(vh * .085, big ? 48 : 40)));
     }
+    cardW = Math.round(ch * .7);
+    const key = [ch, pch, sh, tall].join();
+    if (key === sizeKey) return false; // değişmediyse dokunma (bütün masanın stili yeniden hesaplanmasın)
+    sizeKey = key;
     $('#cg').classList.toggle('tall', tall);
     const st = $('#cg').style;
     st.setProperty('--ch', ch + 'px');
-    st.setProperty('--cw', Math.round(ch * .7) + 'px');
+    st.setProperty('--cw', cardW + 'px');
     st.setProperty('--pch', pch + 'px');
     st.setProperty('--pcw', Math.round(pch * .7) + 'px');
     st.setProperty('--sh', sh + 'px');
     st.setProperty('--sw', Math.round(sh * .7) + 'px');
+    return true;
+  }
+  let sizeKey = '', cardW = 0, handW = 0;
+
+  // Bir bölümü sadece içeriği değiştiyse yeniden çizer: değişmeyen kartlar yerinde kalır,
+  // telefon gereksiz yere boyama yapmaz, uçan kartların gizlediği hedefler bozulmaz.
+  function setHTML(el, html) {
+    if (!el || el.__h === html) return false;
+    el.__h = html;
+    el.innerHTML = html;
+    return true;
+  }
+  // Doğrudan değiştirilen bölüm: bir sonraki çizimde mutlaka yenilensin
+  const dirty = (el) => { if (el) el.__h = null; };
+
+  // Eldeki kartların aralığı (sığmazsa üst üste biner)
+  function handGap(n) {
+    const avail = handW - 8;
+    if (n < 2 || !cardW || avail <= 0) return 6;
+    return n * cardW + (n - 1) * 6 > avail ? (avail - n * cardW) / (n - 1) : 6;
   }
 
   // =============== Yerleşim ===============
@@ -243,20 +267,21 @@
     const ok = new Set(r.playable);
     const mine = myTurn();
     if (sel !== null && ids.indexOf(sel) < 0) sel = null;
-    return ids.map((id) => `<button class="hc${ok.has(id) ? ' ok' : mine && g === 'uno' ? ' no' : ''}${sel === id ? ' sel' : ''}" data-hc="${id}">${face(g, id)}</button>`).join('');
+    const gap = Math.round(handGap(ids.length) * 10) / 10;
+    return ids.map((id, i) => `<button class="hc${ok.has(id) ? ' ok' : mine && g === 'uno' ? ' no' : ''}${sel === id ? ' sel' : ''}" data-hc="${id}" style="margin-left:${i ? gap : 0}px;z-index:${i + 1}">${face(g, id)}</button>`).join('');
   }
 
   // Elde çok kart varsa üst üste bindir
+  // Ekran boyu değişince (döndürme, düğmeler) eldeki kartları yeniden sığdırır
   function fitHand() {
     const el = $('#cghand');
+    const w = el.clientWidth;
+    if (!w || w === handW) return;
+    handW = w;
     const cards = $$('.hc', el);
-    if (!cards.length) return;
-    const cw = cards[0].offsetWidth;
-    const avail = el.clientWidth - 8;
-    const n = cards.length;
-    let gap = 6;
-    if (n > 1 && n * cw + (n - 1) * gap > avail) gap = (avail - n * cw) / (n - 1);
-    cards.forEach((c, i) => { c.style.marginLeft = i ? gap + 'px' : '0'; c.style.zIndex = i + 1; });
+    const gap = Math.round(handGap(cards.length) * 10) / 10;
+    cards.forEach((c, i) => { c.style.marginLeft = (i ? gap : 0) + 'px'; });
+    dirty(el);
   }
 
   // =============== Çizim ===============
@@ -265,7 +290,6 @@
     bind();
     const r = v.round, g = r.game;
     const cg = $('#cg');
-    const rects = capture();
     const prev = V;
     V = v;
     let fresh = false;
@@ -280,22 +304,25 @@
     seenEv = r.evId;
     evs.forEach((e) => { if (e.type === 'play' && g === 'uno') udisc.push(e.card); });
     if (udisc.length > 6) udisc = udisc.slice(-6);
+    // Önce ölçümler (tek seferde), sonra yazmalar: telefon sayfayı bir kez yerleştirir
+    const rects = evs.length && !fresh ? capture() : null;
+    const hw = $('#cghand').clientWidth;
+    if (hw) handW = hw;
     cg.classList.toggle('game-uno', g === 'uno');
     cg.classList.toggle('game-pisti', g === 'pisti');
-    sizes();
+    if (sizes()) handW = $('#cghand').clientWidth || handW; // boyut ya da yön değişti: eli yeniden ölç
     const pos = positions(v);
     ['top', 'left', 'right'].forEach((p) => {
       const seat = Object.keys(pos).find((s) => pos[s] === p);
-      $('#cgs-' + p).innerHTML = seat !== undefined ? seatHTML(v, +seat, p) : '';
+      setHTML($('#cgs-' + p), seat !== undefined ? seatHTML(v, +seat, p) : '');
     });
-    $('#cgc').innerHTML = g === 'uno' ? centerUno(v) : centerPisti(v);
-    $('#cgst').innerHTML = statusHTML(v);
-    $('#cghand').innerHTML = handHTML(v);
-    $('#cgact').innerHTML = actionsHTML(v);
+    setHTML($('#cgc'), g === 'uno' ? centerUno(v) : centerPisti(v));
+    setHTML($('#cgst'), statusHTML(v));
+    setHTML($('#cghand'), handHTML(v));
+    setHTML($('#cgact'), actionsHTML(v));
     $('#cghand').classList.toggle('turn', myTurn());
-    fitHand();
+    if (!handW) requestAnimationFrame(fitHand);
     animate(evs, rects, fresh);
-    requestAnimationFrame(fitHand);
   }
 
   function capture() {
@@ -317,10 +344,18 @@
   const rectOf = (el) => (el ? el.getBoundingClientRect() : null);
   function centerOf(r) { return { left: r.left + r.width / 2, top: r.top + r.height / 2 }; }
 
+  // Efektler sıraya alınır: önce bütün ölçümler yapılır, sonra hepsi birden sayfaya eklenir.
+  // (Ölç-ekle-ölç-ekle yapınca telefon her seferinde sayfayı baştan yerleştirir; takılmanın asıl sebebi bu.)
+  let fxQ = null;
+  const later = (fn) => { if (fxQ) fxQ.push(fn); else fn(); };
+
   // Bir kartı bir yerden bir yere uçurur
   function fly(html, from, to, o) {
     o = o || {};
     if (!from || !to || !from.width || !to.width) return;
+    later(() => flyNow(html, from, to, o));
+  }
+  function flyNow(html, from, to, o) {
     const w = o.w || to.width, h = o.h || to.height;
     const wrap = document.createElement('div');
     wrap.className = 'fly cfly';
@@ -368,8 +403,7 @@
     el.style.left = Math.max(pad, Math.min(window.innerWidth - pad, c.left)) + 'px';
     el.style.top = Math.max(28, c.top) + 'px';
     el.style.animationDelay = (delay || 0) + 'ms';
-    $('#fx').appendChild(el);
-    setTimeout(() => el.remove(), (delay || 0) + 1700);
+    later(() => { $('#fx').appendChild(el); setTimeout(() => el.remove(), (delay || 0) + 1700); });
   }
 
   function burst(points, delay, mine, card) {
@@ -383,32 +417,38 @@
     el.style.left = c.left + 'px';
     el.style.top = c.top + 'px';
     el.style.animationDelay = delay + 'ms';
-    $('#fx').appendChild(el);
-    setTimeout(() => el.remove(), delay + 2300);
     const ring = document.createElement('div');
     ring.className = 'pring';
     ring.style.left = c.left + 'px';
     ring.style.top = c.top + 'px';
     ring.style.animationDelay = delay + 'ms';
-    $('#fx').appendChild(ring);
-    setTimeout(() => ring.remove(), delay + 1200);
-    if (!reduceMotion) confetti(c, delay, points >= 20 ? 40 : 26);
+    later(() => {
+      $('#fx').appendChild(el);
+      setTimeout(() => el.remove(), delay + 2300);
+      $('#fx').appendChild(ring);
+      setTimeout(() => ring.remove(), delay + 1200);
+    });
+    if (!reduceMotion) confetti(c, delay, points >= 20 ? 30 : 20);
     setTimeout(() => {
-      const t = $('#cgt');
+      const t = $('#cgmid');
       if (t) { t.classList.remove('shake2'); void t.offsetWidth; t.classList.add('shake2'); }
       if (mine && navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) { try { navigator.vibrate([40, 60, 120]); } catch (e) {} }
     }, delay);
   }
 
   function confetti(c, delay, n) {
+    later(() => confettiNow(c, delay, n));
+  }
+  function confettiNow(c, delay, n) {
     const colors = ['#e3b04b', '#f8f2df', '#e05252', '#7fc4ec', '#8fe0a0', '#ffd166'];
+    const fx = $('#fx');
     for (let i = 0; i < n; i++) {
       const p = document.createElement('i');
       p.className = 'conf';
       p.style.background = colors[i % colors.length];
       p.style.left = c.left + 'px';
       p.style.top = c.top + 'px';
-      $('#fx').appendChild(p);
+      fx.appendChild(p);
       const a = Math.random() * Math.PI * 2, d = 70 + Math.random() * 130;
       const dx = Math.cos(a) * d, dy = Math.sin(a) * d - 40;
       const anim = p.animate([
@@ -425,17 +465,63 @@
     floatText(text, r, delay, 'bubble ' + (cls || ''));
   }
 
+  // Küçük, ucuz efektler (sadece transform/opacity: telefonu yormaz)
+  function pop(el, delay, k) {
+    if (!el || !el.animate) return;
+    later(() => el.animate([{ transform: 'scale(1)' }, { transform: `scale(${k || 1.12})`, offset: .35 }, { transform: 'scale(1)' }], { duration: 380, delay: delay || 0, easing: 'ease-out' }));
+  }
+  // Kart atan oyuncunun adı hafifçe zıplar
+  function popSeat(seat, delay) {
+    if (seat !== V.me) pop($(`#cg .cseat[data-seat="${seat}"] .who`), delay, 1.09);
+  }
+  // Renk kartı atılınca seçilen renk yerden halka halka yayılır
+  function ripple(col, delay) {
+    const box = rectOf($('#cgpile'));
+    if (!box || col == null || col < 0) return;
+    const c = centerOf(box);
+    later(() => {
+      for (let k = 0; k < 2; k++) {
+        const el = document.createElement('div');
+        el.className = 'cripple c-' + UCOL[col];
+        el.style.left = c.left + 'px';
+        el.style.top = c.top + 'px';
+        $('#fx').appendChild(el);
+        const a = el.animate([{ transform: 'scale(.3)', opacity: .9 }, { transform: 'scale(1.7)', opacity: 0 }], { duration: 750, delay: delay + k * 160, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' });
+        a.onfinish = () => el.remove();
+      }
+    });
+  }
+
   function animate(evs, rects, fresh) {
     if (reduceMotion || !evs.length) return;
     const g = V.round.game;
-    if (fresh) {
-      // yeni el: sadece dağıtımı göster
-      if (evs[0].type === 'deal' && evs.length <= 3) dealAnim(0);
-      return;
+    fxQ = [];
+    try {
+      if (fresh) {
+        // yeni el: sadece dağıtımı göster
+        if (evs[0].type === 'deal' && evs.length <= 3) dealAnim(0);
+      } else {
+        let t = 0;
+        rects.flown = new Set();
+        evs.slice(-4).forEach((ev) => { t = runEvent(g, ev, rects, t); });
+        celebrate(g, t);
+      }
+    } finally {
+      const q = fxQ;
+      fxQ = null;
+      q.forEach((f) => f());
     }
-    let t = 0;
-    const list = evs.slice(-4);
-    list.forEach((ev) => { t = runEvent(g, ev, rects, t); });
+  }
+
+  function celebrate(g, t) {
+    // Uno: eli bitiren kutlanır
+    const res = V.round.result;
+    if (g === 'uno' && V.phase === 'roundEnd' && res && res.winner >= 0) {
+      if (res.winner === V.me) {
+        const b = rectOf($('#cgc'));
+        if (b) { confetti(centerOf(b), t + 150, 26); floatText('Elini bitirdin!', b, t + 150, 'win'); }
+      } else bubble(res.winner, 'Bitti!', t + 150, 'uno');
+    }
   }
 
   function dealAnim(t) {
@@ -465,7 +551,9 @@
       const tw = target ? to.width : (rects.pile.length ? rects.pile[rects.pile.length - 1].rect.width : pileBox && pileBox.width * .7);
       const th = target ? to.height : (rects.pile.length ? rects.pile[rects.pile.length - 1].rect.height : pileBox && pileBox.height * .9);
       const fromScale = ev.seat === me ? 1.05 : .45;
+      popSeat(ev.seat, t);
       fly(html, from, to, { hide: target, delay: t, dur: 430, fromScale, rot0: ev.seat === me ? 0 : -25, rot1: ((ev.card * 37) % 17) - 8, w: tw, h: th });
+      if (g === 'uno' && ev.card >= 100) ripple(ev.color, t + 380);
       if (g === 'pisti' && ev.capture) {
         const dest = capRect(ev.seat);
         const land = t + 440;
@@ -475,6 +563,7 @@
         if (pileBox) fly(html, { left: pileBox.left + (pileBox.width - tw) / 2, top: pileBox.top + (pileBox.height - th) / 2, width: tw, height: th }, dest, { delay: land + rects.pile.length * 30, dur: 520, toScale: .35, toOpacity: .1, w: tw, h: th, rot1: -30 });
         if (ev.pisti) burst(ev.pisti, t + 380, ev.seat === me, ev.card);
         else floatText(`+${ev.capture} kart`, dest, land + 250, 'small');
+        pop($(`#cg [data-cap="${ev.seat}"]`), land + 480, 1.25);
         return t + 1000;
       }
       return t + 380;
@@ -483,13 +572,25 @@
       const dest = capRect(ev.seat);
       rects.pile.forEach((pc, i) => fly(pc.html, pc.rect, dest, { delay: t + i * 30, dur: 520, toScale: .35, toOpacity: .1, w: pc.rect.width, h: pc.rect.height }));
       floatText(`Yerdekiler: +${ev.count}`, dest, t + 300, 'small');
+      pop($(`#cg [data-cap="${ev.seat}"]`), t + 500, 1.25);
       return t + 700;
     }
     if (ev.type === 'draw') {
       const from = rectOf($('#cgdeck')) || rects.deck;
-      const to = seatRect(ev.seat);
       const n = Math.min(ev.count, 5);
-      for (let i = 0; i < n; i++) fly(uback('pile'), from, to, { delay: t + i * 90, dur: 420, toScale: ev.seat === me ? .9 : .4, toOpacity: ev.seat === me ? 0 : 0, w: from && from.width, h: from && from.height });
+      if (ev.seat === me) {
+        // çektiğin kartlar yüzü açık, elindeki yerlerine uçar
+        const fresh = V.round.hand.filter((id) => !rects.hand[id] && !rects.flown.has(id)).slice(0, ev.count);
+        fresh.forEach((id, i) => {
+          rects.flown.add(id);
+          const el = $(`#cghand [data-hc="${id}"]`);
+          if (el && i < 6) fly(face(g, id), from, rectOf(el), { hide: el, delay: t + i * 110, dur: 480, fromScale: .62, rot0: -16, rot1: 0 });
+        });
+      } else {
+        const to = seatRect(ev.seat);
+        popSeat(ev.seat, t);
+        for (let i = 0; i < n; i++) fly(uback('pile'), from, to, { delay: t + i * 90, dur: 420, toScale: .4, toOpacity: 0, w: from && from.width, h: from && from.height });
+      }
       if (ev.forced) bubble(ev.seat, `+${ev.count}`, t + 200, 'bad');
       return t + 300 + n * 90;
     }
@@ -542,6 +643,7 @@
     const p = $('#cgpile');
     if (p) p.classList.toggle('can', myTurn());
     if (myTurn() && V.round.game === 'pisti') { const m = $('#cgst .main span'); if (m) m.textContent = 'Atmak için karta tekrar dokun ya da yere dokun'; }
+    dirty($('#cghand')); dirty($('#cgc')); dirty($('#cgst'));
   }
 
   function doAction(a) {
@@ -610,6 +712,7 @@
     if (!t.closest('#cgh') && sel !== null) {
       sel = null;
       $$('#cghand .hc.sel').forEach((el) => el.classList.remove('sel'));
+      dirty($('#cghand')); dirty($('#cgc')); dirty($('#cgst'));
     }
   }
 
@@ -622,7 +725,8 @@
     window.addEventListener('pointermove', onMove, { passive: false });
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', () => { if (drag) { if (drag.ghost) drag.ghost.remove(); drag.el.classList.remove('lift'); drag = null; } });
-    window.addEventListener('resize', () => { if (V && !$('#cg').classList.contains('hidden')) { sizes(); fitHand(); } });
+    // Ekran dönünce ya da boyut değişince masa yeni ölçülerle yeniden çizilir (sadece değişen yerler)
+    window.addEventListener('resize', () => { if (V && C && !$('#cg').classList.contains('hidden')) render(V, C); });
     // El alanının genişliği değişince (düğmeler değişti, ekran döndü) kartları yeniden sığdır
     if (window.ResizeObserver) new ResizeObserver(() => { if (V) fitHand(); }).observe($('#cghand'));
   }

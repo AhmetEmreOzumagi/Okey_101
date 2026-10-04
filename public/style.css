@@ -297,7 +297,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .av svg { position: absolute; inset: -5px; width: calc(100% + 10px); height: calc(100% + 10px); transform: rotate(-90deg); pointer-events: none; }
 .av svg circle { fill: none; stroke-width: 3; }
 .av svg .tr { stroke: rgba(255, 255, 255, .18); }
-.av svg .pg { stroke: var(--brass); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 0; transition: stroke-dashoffset .25s linear, stroke .3s; opacity: 0; }
+.av svg .pg { stroke: var(--brass); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 0; transition: stroke .3s; opacity: 0; }
 .who.turn .av svg .pg { opacity: 1; }
 .who.turn .av svg .pg.low { stroke: var(--danger); }
 .av { transition: transform .3s var(--spring); }
@@ -362,7 +362,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   background: linear-gradient(180deg, #3d2410, #24150a);
 }
 #timebar { grid-column: 1 / -1; height: 4px; margin: 0 -6px; background: rgba(0, 0, 0, .35); overflow: hidden; }
-#timebar i { display: block; height: 100%; width: 0; background: var(--brass); transition: width .25s linear, background .3s; }
+#timebar i { display: block; height: 100%; width: 100%; background: var(--brass); transform: scaleX(0); transform-origin: left center; transition: transform .25s linear, background .3s; will-change: transform; }
 #timebar.low i { background: var(--danger); }
 #rack {
   margin-top: 4px; justify-self: center; align-self: start; max-width: 100%;
@@ -632,13 +632,18 @@ body.compact #actions .row .btn { font-size: 11px; padding: 0 1px; letter-spacin
   grid-template-areas: "tl top tr" "left mid right";
   gap: 2px 6px;
   padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 4px max(8px, env(safe-area-inset-left));
+  isolation: isolate;
+}
+/* Çuha ve masa kenarı kendi katmanlarında: kartlar değişince arka plan yeniden boyanmaz */
+#cgt::after {
+  content: ""; position: absolute; inset: 0; z-index: -2; pointer-events: none; will-change: transform;
   background:
     radial-gradient(110% 90% at 50% 45%, rgba(255, 255, 255, .06), transparent 60%),
     radial-gradient(130% 120% at 50% 50%, var(--felt-light) 0%, var(--felt) 50%, var(--felt-deep) 100%);
 }
 /* Masa kenarı: karşılıklı oturulan oval masa */
 #cgt::before {
-  content: ""; position: absolute; left: 7%; right: 7%; top: 9%; bottom: -30%; border-radius: 50%; pointer-events: none;
+  content: ""; position: absolute; left: 7%; right: 7%; top: 9%; bottom: -30%; border-radius: 50%; pointer-events: none; z-index: -1; will-change: transform;
   box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .06), inset 0 0 40px rgba(0, 0, 0, .25), 0 0 0 9px rgba(79, 46, 19, .55), 0 0 0 11px rgba(0, 0, 0, .2);
 }
 #cgs-top { grid-area: top; justify-self: center; position: relative; z-index: 2; }
@@ -674,7 +679,10 @@ body.compact #actions .row .btn { font-size: 11px; padding: 0 1px; letter-spacin
 .cdeck > b { position: absolute; right: -10px; bottom: -8px; background: rgba(0, 0, 0, .55); border-radius: 999px; padding: 1px 8px; font-size: 12px; z-index: 3; }
 .cdeck.empty { border: 2px dashed rgba(255, 255, 255, .18); border-radius: 10px; }
 .cdeck.can > :first-child, .cdeck.can > .d2 { box-shadow: inset 0 0 0 calc(var(--pcw) * .05) #fff, 0 0 0 3px var(--brass), 0 0 18px rgba(227, 176, 75, .6); }
-.cdeck.can { cursor: pointer; animation: glow 1.6s ease-in-out infinite; border-radius: 10px; }
+.cdeck.can { cursor: pointer; border-radius: 10px; }
+/* Çekilebilir deste: parlama ayrı katmanda sadece saydamlığı değişerek yanıp söner */
+.cdeck.can::after { content: ""; position: absolute; inset: -5px; border-radius: 14px; pointer-events: none; z-index: 2; box-shadow: 0 0 0 4px rgba(227, 176, 75, .35), 0 0 22px rgba(227, 176, 75, .55); animation: cglow 1.6s ease-in-out infinite; will-change: opacity; }
+@keyframes cglow { 50% { opacity: .2; } }
 .cdeck .lbl { position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); background: var(--brass); color: #2a1d00; border-radius: 999px; padding: 1px 9px; font-weight: 800; font-size: 11px; white-space: nowrap; z-index: 4; }
 .cpile { position: relative; width: calc(var(--pcw) * 1.7); height: calc(var(--pcw) * 1.43 + 18px); flex: none; border-radius: 16px; transition: box-shadow .2s; }
 .cpile .ps { position: absolute; left: 50%; top: 50%; margin-left: calc(var(--pcw) * -.5); margin-top: calc(var(--pcw) * -.715); }
@@ -706,19 +714,24 @@ body.compact #actions .row .btn { font-size: 11px; padding: 0 1px; letter-spacin
 #cgh {
   flex: none; position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px;
   padding: 8px max(10px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  isolation: isolate;
+}
+#cgh::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; will-change: transform;
   background: linear-gradient(180deg, #3d2410, #24150a);
   box-shadow: 0 -6px 16px rgba(0, 0, 0, .3);
 }
 .timebar { position: absolute; left: 0; right: 0; top: 0; height: 4px; background: rgba(0, 0, 0, .35); overflow: hidden; }
-.timebar i { display: block; height: 100%; width: 0; background: var(--brass); transition: width .25s linear, background .3s; }
+.timebar i { display: block; height: 100%; width: 100%; background: var(--brass); transform: scaleX(0); transform-origin: left center; transition: transform .25s linear, background .3s; will-change: transform; }
 .timebar.low i { background: var(--danger); }
 #cghand { display: flex; align-items: flex-end; justify-content: center; min-width: 0; padding-top: calc(var(--cw) * .32); }
-.hc { padding: 0; border: 0; background: none; flex: none; position: relative; transition: transform .22s var(--spring), margin .2s, filter .2s; border-radius: calc(var(--cw) * .1); }
+.hc { padding: 0; border: 0; background: none; flex: none; position: relative; transition: transform .22s var(--spring); border-radius: calc(var(--cw) * .1); }
 .hc > .pc, .hc > .uc { --w: var(--cw); }
 #cghand.turn .hc.ok { transform: translateY(-8%); }
 #cghand.turn .hc.ok > * { box-shadow: inset 0 0 0 calc(var(--cw) * .05) #fff, 0 0 0 2px rgba(227, 176, 75, .8), 0 8px 14px rgba(0, 0, 0, .4); }
 .game-pisti #cghand.turn .hc.ok > * { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08), 0 0 0 2px rgba(227, 176, 75, .8), 0 8px 14px rgba(0, 0, 0, .4); }
-.hc.no { filter: brightness(.62) saturate(.6); }
+/* Oynanamayan kart: filtre yerine üstüne yarı saydam gölge (telefonda çok daha hafif) */
+.hc.no::after { content: ""; position: absolute; inset: 0; border-radius: calc(var(--cw) * .11); background: rgba(12, 10, 8, .42); pointer-events: none; }
 .hc.sel, #cghand.turn .hc.sel { transform: translateY(-22%); z-index: 50 !important; }
 .hc.sel > * { box-shadow: 0 0 0 3px #fff, 0 12px 20px rgba(0, 0, 0, .55) !important; }
 .hc.lift { opacity: .25; }
@@ -752,10 +765,10 @@ body.compact #actions .row .btn { font-size: 11px; padding: 0 1px; letter-spacin
 .pburst span { display: inline-block; margin-top: 6px; font-size: 24px; font-weight: 900; background: var(--brass); color: #2a1d00; padding: 2px 14px; border-radius: 999px; box-shadow: 0 4px 12px rgba(0, 0, 0, .4); }
 .pburst.gold b { color: #ffd76a; -webkit-text-stroke-color: #6b4400; text-shadow: 0 4px 0 #6b4400, 0 0 34px rgba(255, 215, 106, .85); }
 @keyframes pburst { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.2) rotate(-14deg); } 16% { opacity: 1; transform: translate(-50%, -50%) scale(1.3) rotate(5deg); } 28% { transform: translate(-50%, -50%) scale(1) rotate(-2deg); } 80% { opacity: 1; transform: translate(-50%, -56%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -85%) scale(.9); } }
-.pring { position: fixed; z-index: 46; width: 30px; height: 30px; border-radius: 50%; border: 4px solid var(--brass); transform: translate(-50%, -50%); pointer-events: none; animation: pring .9s ease-out both; }
-@keyframes pring { from { opacity: .95; width: 30px; height: 30px; } to { opacity: 0; width: 340px; height: 340px; border-width: 1px; } }
+.pring { position: fixed; z-index: 46; width: 320px; height: 320px; margin: -160px 0 0 -160px; border-radius: 50%; border: 5px solid var(--brass); pointer-events: none; animation: pring .9s ease-out both; will-change: transform, opacity; }
+@keyframes pring { from { opacity: .95; transform: scale(.1); } to { opacity: 0; transform: scale(1); } }
 .conf { position: fixed; z-index: 47; width: 8px; height: 12px; border-radius: 2px; pointer-events: none; }
-#cgt.shake2 { animation: tshake .45s; }
+#cgmid.shake2 { animation: tshake .45s; }
 @keyframes tshake { 20% { transform: translate(-5px, 2px); } 40% { transform: translate(5px, -2px); } 60% { transform: translate(-3px, 1px); } 80% { transform: translate(2px, -1px); } }
 
 /* Renk seçimi (renk seç / +4) */
@@ -772,7 +785,7 @@ body.compact #cgmid { gap: 6px; }
   #cgact .btn { font-size: 17px; padding: 13px 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dirring i, .cseat .fcount.one, .pend, .unobtn.hot, .catchbtn, .cdeck.can { animation: none; }
+  .dirring i, .cseat .fcount.one, .pend, .unobtn.hot, .catchbtn, .cdeck.can::after { animation: none; }
 }
 
 /* Kart oyunları telefon dik tutulunca da oynanır */
@@ -803,3 +816,11 @@ body.compact .card h2 { font-size: 18px; }
 body.compact .card .sub { margin-bottom: 6px; }
 body.compact table.score th, body.compact table.score td { padding: 4px 6px; }
 body.compact table.score { font-size: 13px; }
+
+/* Kart oyunlarında sonuç penceresinin arkası bulanıklaştırılmaz (telefonu yoran en pahalı efekt) */
+body.card-game #overlay, body.card-game #modal { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(4, 18, 11, .86); }
+/* Renk kartı atılınca yerden yayılan renkli halka */
+.cripple { position: fixed; z-index: 44; width: 180px; height: 180px; margin: -90px 0 0 -90px; border-radius: 50%; border: 10px solid var(--rc, #fff); pointer-events: none; will-change: transform, opacity; }
+.cripple.c-r { --rc: #df3a3f; } .cripple.c-y { --rc: #f0b42a; } .cripple.c-g { --rc: #2c9c59; } .cripple.c-b { --rc: #2d6bd0; }
+.conf { will-change: transform, opacity; }
+.ftext.win { font-size: 30px; color: #ffd76a; text-shadow: 0 3px 0 #6b4400, 0 8px 18px rgba(0, 0, 0, .5); }

@@ -106,11 +106,15 @@
   function onView(v) {
     if (!v || typeof v !== 'object') return;
     if (view && v.boot === view.boot && typeof v.seq === 'number' && v.seq < view.seq) return;
+    // Aynı durum iki kez gelebilir (hamlenin cevabı + anlık güncelleme): masayı boşuna yeniden çizme
+    const same = view && v.boot === view.boot && v.seq === view.seq && v.me === view.me &&
+      JSON.stringify(v.seats) === JSON.stringify(view.seats) && JSON.stringify(v.net) === JSON.stringify(view.net);
     view = v;
     if (v.round && v.round.remainingMs != null && v.phase === 'playing') {
       deadline = performance.now() + v.round.remainingMs;
       turnTotal = Math.max(1000, (v.settings.turnSecs || 30) * 1000);
     } else deadline = 0;
+    if (same) return;
     if (drag) { pendingRender = true; return; }
     render();
   }
@@ -999,18 +1003,20 @@
   // =============== Süre ===============
   function updateTimer() {
     const bars = $$('#timebar, #cgtime');
+    // Süre çubuğu genişlik yerine transform ile kısalır (sayfayı yeniden dizmeden, akıcı)
+    const setBar = (b, f) => { const i = b.firstElementChild, t = 'scaleX(' + f.toFixed(3) + ')'; if (i.style.transform !== t) i.style.transform = t; };
     if (!view || !view.round || view.phase !== 'playing' || !deadline) {
-      bars.forEach((b) => { b.firstElementChild.style.width = '0'; });
+      bars.forEach((b) => setBar(b, 0));
       return;
     }
     const rem = Math.max(0, deadline - performance.now());
     const frac = Math.min(1, rem / turnTotal);
     const low = rem < 10000;
     const mine = myTurn();
-    bars.forEach((b) => { b.firstElementChild.style.width = mine ? (frac * 100).toFixed(2) + '%' : '0'; b.classList.toggle('low', low); });
-    $$('.who.turn .pg').forEach((c) => { c.style.strokeDashoffset = (100 * (1 - frac)).toFixed(2); c.classList.toggle('low', low); });
+    bars.forEach((b) => { setBar(b, mine ? frac : 0); b.classList.toggle('low', low); });
+    $$('.who.turn .pg').forEach((c) => { c.style.strokeDashoffset = (100 * (1 - frac)).toFixed(1); c.classList.toggle('low', low); });
     const s = $('#secs');
-    if (s) { s.textContent = Math.ceil(rem / 1000); s.classList.toggle('low', low); }
+    if (s) { const txt = String(Math.ceil(rem / 1000)); if (s.textContent !== txt) s.textContent = txt; s.classList.toggle('low', low); }
     if (mine && rem < 5000 && rem > 0 && !warned) {
       warned = true;
       if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) { try { navigator.vibrate([60, 80, 60]); } catch (e) {} }
