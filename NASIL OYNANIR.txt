@@ -1,5 +1,9 @@
-101 OKEY — NASIL OYNANIR
-========================
+101 OKEY · PİŞTİ · UNO — NASIL OYNANIR
+======================================
+
+Üç oyun var: 101 Okey (4 kişi, taşlarla), Pişti (2-4 kişi, iskambil) ve
+Uno (2-4 kişi, renkli kartlar). Hangisini oynayacağınızı masaya oturduktan
+sonra ekranın üstündeki üç düğmeden seçersiniz. Eksik kişi yerine bot oturur.
 
 GEREKEN (sadece oyunu açan bilgisayarda, bir kez)
 Oyunu bir bilgisayar açar: Mac, Windows ya da Linux. O bilgisayarda Node.js
@@ -36,17 +40,21 @@ AYNI WI-FI'DAN (internetsiz)
    oynayabilir.
 
 SONRA
-Herkes adını yazıp masadaki boş bir sandalyeye dokunsun. Ayarlardan
-Eşli/Eşsiz, Katlamalı, hamle süresi ve el sayısını seçin. Dört kişi olunca
-"Oyunu başlat".
+Herkes adını yazıp masadaki boş bir sandalyeye dokunsun. Üstten oyunu seçin:
+"101 Okey", "Pişti" ya da "Uno". Altta o oyunun ayarları çıkar:
+  Okey:  Eşli/Eşsiz, Katlamalı, hamle süresi, el sayısı (4 kişi gerekir)
+  Pişti: Eşli/Eşsiz (eşli için 4 kişi), hedef puan (51/101/151), hamle süresi
+  Uno:   hedef puan (100/200/300/500), +2/+4 biriktirme, hamle süresi
+Sonra "Oyunu başlat". Pişti ve Uno 2 kişiyle de başlar.
 
-2 YA DA 3 KİŞİYSENİZ: BOTLAR
+EKSİK VARSA: BOTLAR
 Masada boş yer varsa "Boş yerlere bot oturt"a basın (ya da boş sandalyenin
 altındaki "bot koy"a dokunun). Botlar kendi sırasında kendiliğinden oynar:
 çeker, açar, işler, atar. Eşli oyunda bot eşiniz de olabilir. Bot istemezseniz
 altındaki "çıkar"a dokunun.
 Oyun sürerken bir arkadaş gelirse: linke girip adını yazsın ve bir botun
-sandalyesine dokunsun ("yerine geç"). Botun taşlarıyla oyuna devam eder.
+sandalyesine dokunsun ("yerine geç"). Botun taşlarıyla (kartlarıyla) devam eder.
+Pişti ve Uno'da da botlar aynı şekilde oturur ve oynar.
 
 İLK SEFERDE ÇIKABİLECEK SORULAR
 - Windows "Windows bilgisayarınızı korudu" derse: "Ek bilgi" > "Yine de çalıştır".
@@ -94,6 +102,19 @@ OYUN İÇİNDE
 - Her hamle için süre vardır (varsayılan 30 sn). Süre dolarsa taş
   otomatik çekilip atılır.
 
+PİŞTİ VE UNO'DA
+- Telefon yan da dik de tutulabilir. Kartlarınız altta, rakipler masanın
+  etrafında oturur: sağınızdaki sizden sonra oynar.
+- Kart atmak: karta iki kez dokunun; ya da bir kez dokunup ortadaki kartlara
+  dokunun; ya da kartı yukarı, masaya sürükleyin.
+- Uno'da atacak kartınız yoksa desteye ya da "Kart çek"e dokunun. Çektiğiniz
+  kart uyuyorsa atabilir ya da "Pas" diyebilirsiniz. Renk kartı ve +4 atınca
+  renk seçme penceresi açılır.
+- Uno'da 2 kartınız kalınca "UNO!" düğmesine basın. Biri demeyi unutursa
+  ekranda "Yakala!" düğmesi çıkar; basan olursa o kişi 2 kart çeker.
+- El bitince sonuç tablosu gelir; menüdeki (☰) "Puan tablosu" el el puanları
+  gösterir. "Kısa kurallar" o oyunun kurallarını açar.
+
 TELEFON KAPANIRSA / BAĞLANTI KOPARSA
 Sayfayı yenileyin, kaldığınız yerden devam edersiniz. Başka telefona
 geçtiyseniz aynı adı yazmanız yeterli. Adres lazımsa oyundaki menüde (☰)
@@ -118,7 +139,7 @@ Kim bilgisayara ulaşıyor, oyun penceresinde görünür: biri adresi açınca
 "Sayfa açıldı: 192.168..." satırı çıkar. Bu satır hiç çıkmıyorsa o cihaz
 bilgisayara ulaşamıyor demektir; sorun ağda, oyunda değil.
 
-KURALLAR (özet)
+OKEY KURALLARI (özet)
 - Herkese 21, başlayana 22 taş. Başlayan çekmeden bir taş atar. Her elden
   sonra bir sonraki oyuncu başlar.
 - Yandan aldığınız taşı aynı anda açışta ya da işlemede kullanırsınız.
@@ -144,3 +165,33 @@ KURALLAR (özet)
   taşların toplamını, çiftle açanlar iki katını, açmayanlar 202 yazar. Elde
   kalan okey 101 sayılır. Bu el de el sayısına dahildir.
 - Seçilen el sayısı bitince toplamı en düşük olan kazanır.
+
+PİŞTİ KURALLARI (özet)
+- 52'lik desteyle 2-4 kişi. 4 kişide eşli de olur (karşılıklılar eş).
+- Ortaya 4 kart konur: 3'ü kapalı, en üstteki açık. Herkese 4 kart dağıtılır;
+  eller bitince deste bitene kadar 4'er kart daha dağıtılır.
+- Sırayla birer kart atılır. Yerdeki en üst kartla aynı değerde kart atan
+  yerdeki bütün kartları alır. Vale (J) ile her zaman bütün kartlar alınır.
+- PİŞTİ: yerde tek kart varken onu aynı değerle almak 10 puan. Yerdeki As ile
+  pişti 20 puan, Vale ile pişti 30 puan. Tek karta vale atmak pişti sayılmaz;
+  elin en son kartıyla yapılan pişti de sayılmaz.
+- Kart puanları: her As 1, her Vale 1, sinek ikili 2, karo onlu 3. En çok
+  kartı alan (eşlide takım) 3 puan daha alır; eşitlikte kimse almaz.
+- Deste bitince yerde kalan kartlar en son kart alana gider.
+- Hedef puana ilk ulaşan kazanır (aynı elde birden çok kişi geçerse en yüksek
+  puanlı; eşitse bir el daha oynanır).
+
+UNO KURALLARI (özet)
+- 108 kartlık Uno destesi, 2-4 kişi, herkese 7 kart.
+- Yerdeki kartla aynı renkte, aynı sayıda ya da aynı işarette kart atılır.
+  Renk kartı ve +4 her zaman atılır; atan rengi seçer.
+- Atacak kart yoksa desteden 1 kart çekilir; uyuyorsa hemen atılabilir.
+- Pas (⊘): sıradaki atlanır. Yön (⇄): yön değişir (2 kişide pas gibi).
+  +2: sıradaki 2 kart çeker, sırası geçer. +4: sıradaki 4 kart çeker, sırası geçer.
+- Biriktirme açıksa +2 gelen +2 ya da +4 atıp cezayı sıradakine aktarabilir;
+  +4 üstüne +4 atılır. Karşılık veremeyen hepsini çeker.
+- 2 kartı kalan UNO! der. Demeden 1 karta inen, sıradaki oynamadan önce
+  yakalanırsa 2 kart çeker. Botlar da yakalar.
+- Elini ilk bitiren, rakiplerin elinde kalan kartların puanını alır: sayılar
+  kendi değeri, Pas/Yön/+2 20, renk kartı ve +4 50 puan. Hedef puana ilk
+  ulaşan kazanır.

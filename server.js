@@ -66,9 +66,8 @@ function buildPage() {
   const safe = (js) => js.replace(/<\/script/gi, '<\\/script');
   let html = read('index.html');
   html = html.replace('<link rel="stylesheet" href="style.css">', () => '<style>' + read('style.css') + '</style>');
-  html = html.replace('<script src="engine.js"></script>', () => '<script>' + safe(read('engine.js')) + '</script>');
-  html = html.replace('<script src="qr.js"></script>', () => '<script>' + safe(read('qr.js')) + '</script>');
-  html = html.replace('<script src="app.js"></script>', () => '<script>' + safe(read('app.js')) + '</script>');
+  // Bütün betikler sayfanın içine gömülür (engine.js, qr.js, cards.js, app.js ...)
+  html = html.replace(/<script src="([a-z0-9-]+\.js)"><\/script>/g, (m, f) => '<script>' + safe(read(f)) + '</script>');
   const raw = Buffer.from(html, 'utf8');
   page = { raw, gz: zlib.gzipSync(raw, { level: 9 }), etag: '"' + crypto.createHash('sha1').update(raw).digest('hex').slice(0, 16) + '"' };
 }

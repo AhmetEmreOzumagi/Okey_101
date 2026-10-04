@@ -122,6 +122,57 @@ async function main() {
     await sleep(25);
   }
 
+  if (players[0].view.phase !== 'gameEnd') throw new Error('Okey oyunu bitmedi');
+  const okeyRounds = rounds;
+
+  // Pişti ve Uno: aynı masada yeni oyun, 2 insan + 2 bot, birer el HTTP üzerinden
+  const cardResults = [];
+  for (const game of ['pisti', 'uno']) {
+    let j = await post({ type: 'reset', token: players[0].token });
+    if (!j.ok) throw new Error('reset: ' + j.error);
+    j = await post({ type: 'settings', token: players[0].token, game, turnSecs: 0 });
+    if (!j.ok) throw new Error('settings: ' + j.error);
+    if (game === 'pisti') {
+      // Can ve Deniz kalkar, yerlerine bot oturur (bir sonraki oyunda da kalırlar)
+      for (const p of players.slice(2)) {
+        j = await post({ type: 'leave', token: p.token });
+        if (!j.ok) throw new Error('leave: ' + j.error);
+        j = await post({ type: 'addBot', token: players[0].token, seat: p.seat });
+        if (!j.ok) throw new Error('addBot: ' + j.error);
+      }
+    }
+    j = await post({ type: 'start', token: players[0].token });
+    if (!j.ok) throw new Error(game + ' start: ' + j.error);
+    const humans = players.slice(0, 2);
+    let moves = 0, done = false;
+    const t1 = Date.now();
+    while (Date.now() - t1 < 90000) {
+      await sleep(20);
+      const v = humans[0].view;
+      if (!v || !v.round || v.round.game !== game) continue;
+      if (v.phase === 'roundEnd') { done = true; break; }
+      if (v.phase !== 'playing') continue;
+      for (const p of humans) {
+        const r = p.view.round;
+        if (r.hand.length !== r.handCounts[p.seat]) throw new Error('El sayısı tutarsız (' + game + ')');
+        if ('hands' in r || 'deck' in r) throw new Error('Gizli bilgi sızıyor (' + game + ')');
+      }
+      const cur = humans.find((p) => p.seat === v.round.turn);
+      if (!cur || !cur.view.round || cur.view.round.turn !== cur.seat) continue;
+      const r = cur.view.round;
+      const id = r.playable[0];
+      if (game === 'uno' && r.hand.length === 2 && !r.uno[cur.seat]) await post({ type: 'uno', token: cur.token });
+      if (id !== undefined) j = await post({ type: 'play', token: cur.token, card: id, color: 2 });
+      else if (r.drew) j = await post({ type: 'pass', token: cur.token });
+      else j = await post({ type: 'draw', token: cur.token });
+      if (!j.ok) { errors++; console.log(game, 'reddedildi', j.error); }
+      moves++;
+      await sleep(30);
+    }
+    if (!done) throw new Error(game + ' eli bitmedi');
+    cardResults.push(`${game} ${moves} hamle`);
+  }
+
   // Yeniden bağlanma: Ayşe'nin bağlantısını kopar, aynı isimle dön
   conns[1].destroy();
   await sleep(200);
@@ -134,9 +185,8 @@ async function main() {
   srv.kill();
   fs.unlinkSync(STATE);
 
-  console.log(`HTTP testi tamam: ${rounds} el bitti, ${actions} hamle, ${errors} reddedilen, son durum: ${players[0].view.phase}, kayıt: ${saved.phase}`);
+  console.log(`HTTP testi tamam: okey ${okeyRounds} el, ${actions} hamle, ${errors} reddedilen; ${cardResults.join(', ')}; kayıt: ${saved.phase}`);
   console.log(out.split('\n').filter((l) => l.includes('http://')).slice(0, 2).join('\n'));
-  if (players[0].view.phase !== 'gameEnd') throw new Error('Oyun bitmedi');
 }
 
 main().catch((e) => { console.error('HATA:', e); process.exit(1); });

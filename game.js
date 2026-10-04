@@ -1,21 +1,18 @@
 'use strict';
-/* 101 Okey oyun durumu ve hamleler. Sunucu bunu kullanır; testler de doğrudan bunu çağırır. */
+/* Masa (lobi, koltuklar, ayarlar) ve 101 Okey oyunu. Pişti ve Uno kendi dosyalarında.
+   Sunucu bunu kullanır; testler de doğrudan bunu çağırır. */
 const E = require('./public/engine.js');
 const crypto = require('crypto');
+const { GameError, fail, shuffle, newToken, addLog, nameOf, startClock } = require('./lib.js');
+const P = require('./pisti.js');
+const U = require('./uno.js');
 
-class GameError extends Error {}
-const fail = (msg) => { throw new GameError(msg); };
+// Kart oyunları: masadaki oyun pişti ya da uno ise hamleler o dosyaya gider
+const CARD = { pisti: P, uno: U };
+const cardGame = (s) => (s.round && CARD[s.round.game]) || null;
 
-function shuffle(a) {
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = crypto.randomInt(i + 1);
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-const newToken = () => crypto.randomBytes(12).toString('hex');
-
-const DEFAULTS = { rounds: 5, mode: 'solo', katlamali: false, turnSecs: 30 };
+const GAMES = ['okey', 'pisti', 'uno'];
+const DEFAULTS = { game: 'okey', rounds: 5, mode: 'solo', katlamali: false, turnSecs: 30, pistiTarget: 101, unoTarget: 200, unoStack: false };
 const TURN_CHOICES = [0, 20, 30, 45, 60];
 
 function create() {
@@ -39,7 +36,9 @@ function normalize(s) {
   if (!Array.isArray(s.log)) s.log = [];
   if (!Array.isArray(s.history)) s.history = [];
   const r = s.round;
-  if (r) {
+  if (r && CARD[r.game]) {
+    if (s.phase === 'playing') startClock(s);
+  } else if (r) {
     // Eski sürümde yandan alınıp elde kalan taş: geri bırak, sıra yeniden çekişe dönsün
     if (r.took !== null && r.took !== undefined && s.phase === 'playing') {
       const left = (r.turn + 3) % 4;
@@ -54,11 +53,6 @@ function normalize(s) {
   return s;
 }
 
-function addLog(s, text) {
-  s.log.push({ t: Date.now(), text });
-  if (s.log.length > 80) s.log.splice(0, s.log.length - 80);
-}
-const nameOf = (s, i) => (s.seats[i] ? s.seats[i].name : 'Koltuk ' + (i + 1));
 const BOT_NAMES = ['Bot Ali', 'Bot Ayşe', 'Bot Can', 'Bot Zeynep', 'Bot Mehmet', 'Bot Elif'];
 function botName(s) {
   const taken = new Set(s.seats.filter(Boolean).map((p) => p.name.toLocaleLowerCase('tr')));
@@ -69,15 +63,10 @@ const isTeam = (s) => s.settings.mode === 'team';
 const partnerOf = (seat) => (seat + 2) % 4;
 
 // ---------- Süre ----------
-function startClock(s) {
-  const r = s.round;
-  if (!r) return;
-  const secs = s.settings.turnSecs | 0;
-  r.deadline = secs > 0 && s.phase === 'playing' ? Date.now() + secs * 1000 : 0;
-}
-
 // Süre dolduysa sıradakini otomatik oynatır. Bir şey değiştiyse true döner.
 function tick(s, now) {
+  const M = cardGame(s);
+  if (M) return M.tick(s, now || Date.now());
   const r = s.round;
   if (s.phase !== 'playing' || !r || !r.deadline) return false;
   if ((now || Date.now()) < r.deadline + 1200) return false; // ağ gecikmesi için küçük pay
@@ -321,6 +310,8 @@ function doSwap(r, seat, a) {
 
 function act(s, seat, a) {
   if (seat < 0) fail('Masada değilsin.');
+  const M = cardGame(s);
+  if (M) return M.act(s, seat, a || {});
   const type = a && a.type;
   if (a && a.side && (type === 'open' || type === 'meld' || type === 'add' || type === 'swap' || type === 'batch')) return sideAction(s, seat, a);
   switch (type) {
@@ -573,15 +564,39 @@ function lobbyAction(s, seat, a, isOnline) {
         if (!TURN_CHOICES.includes(t)) fail('Geçersiz süre.');
         st.turnSecs = t;
       }
+      if (a.game !== undefined) {
+        if (!GAMES.includes(a.game)) fail('Geçersiz oyun.');
+        st.game = a.game;
+      }
+      if (a.pistiTarget !== undefined) {
+        const t = parseInt(a.pistiTarget, 10);
+        if (!P.TARGETS.includes(t)) fail('Geçersiz hedef puan.');
+        st.pistiTarget = t;
+      }
+      if (a.unoTarget !== undefined) {
+        const t = parseInt(a.unoTarget, 10);
+        if (!U.TARGETS.includes(t)) fail('Geçersiz hedef puan.');
+        st.unoTarget = t;
+      }
+      if (a.unoStack !== undefined) st.unoStack = !!a.unoStack;
       return;
     }
     case 'start': {
       if (s.phase !== 'lobby') fail('Oyun zaten başladı.');
-      if (s.seats.some((p) => !p)) fail('Başlamak için 4 kişi gerekli. Boş yerlere bot oturtabilirsin.');
-      if (s.seats.every((p) => p.bot)) fail('Masada en az bir kişi olmalı.');
+      const game = s.settings.game || 'okey';
+      const seated = s.seats.filter(Boolean);
+      if (game === 'okey') {
+        if (s.seats.some((p) => !p)) fail('Başlamak için 4 kişi gerekli. Boş yerlere bot oturtabilirsin.');
+      } else {
+        if (seated.length < 2) fail('Başlamak için en az 2 kişi gerekli. Boş yerlere bot oturtabilirsin.');
+        if (game === 'pisti' && s.settings.mode === 'team' && seated.length < 4) fail('Eşli pişti için 4 kişi gerekli.');
+      }
+      if (seated.every((p) => p.bot)) fail('Masada en az bir kişi olmalı.');
       s.history = [];
-      s.startSeat = crypto.randomInt(4);
-      deal(s);
+      const occupied = [0, 1, 2, 3].filter((i) => s.seats[i]);
+      s.startSeat = occupied[crypto.randomInt(occupied.length)];
+      if (game === 'okey') deal(s);
+      else CARD[game].deal(s);
       return;
     }
     case 'reset': {
@@ -619,7 +634,10 @@ function view(s, token, isOnline, extra) {
     lan: (extra && extra.lan) || [],
   };
   const r = s.round;
-  if (r && s.phase !== 'lobby') {
+  const M = cardGame(s);
+  if (M && s.phase !== 'lobby') {
+    v.round = M.view(s, me);
+  } else if (r && s.phase !== 'lobby') {
     const left = me >= 0 ? (me + 3) % 4 : -1;
     const canTake = me >= 0 && s.phase === 'playing' && r.turn === me && r.tphase === 'draw' &&
       r.discards[left].length > 0 && r.lastDiscardSeat === left;
@@ -650,4 +668,4 @@ function view(s, token, isOnline, extra) {
   return v;
 }
 
-module.exports = { create, normalize, join, lobbyAction, act, view, seatOf, deal, tick, openReq, pairsAllowed, GameError, newToken, TURN_CHOICES };
+module.exports = { create, normalize, join, lobbyAction, act, view, seatOf, deal, tick, openReq, pairsAllowed, GameError, newToken, TURN_CHOICES, GAMES, CARD };

@@ -1,15 +1,21 @@
-# 101 Okey
+# 101 Okey · Pişti · Uno
 
-Arkadaşlarla telefondan oynanan 4 kişilik **101 Okey**. Oyunu bir bilgisayar açar (Mac, Windows ya da Linux), herkes telefonundan ya da tabletinden **tarayıcıyla** girer. Telefonlara uygulama kurulmaz; Android, iPhone, tablet ve bilgisayar aynı masada oynar.
+Arkadaşlarla telefondan oynanan masa oyunları: **101 Okey**, **Pişti** ve **Uno**. Hangi oyunun oynanacağı ana menüden (lobi) seçilir. Oyunu bir bilgisayar açar (Mac, Windows ya da Linux), herkes telefonundan ya da tabletinden **tarayıcıyla** girer. Telefonlara uygulama kurulmaz; Android, iPhone, tablet ve bilgisayar aynı masada oynar.
 
-![Oyun ekranı](docs/oyun.jpg)
+![101 Okey](docs/oyun.jpg)
+
+| Pişti | Uno |
+| --- | --- |
+| ![Pişti](docs/pisti.jpg) | ![Uno](docs/uno.jpg) |
 
 ## Özellikler
 
 - **Her ağdan oynanır:** internet linkiyle herkes kendi yerinden girer; biri evin Wi-Fi'ında, biri hotspot'ta, biri mobil veride olabilir. İsterseniz internetsiz, aynı Wi-Fi'dan da oynanır.
 - **QR kodla giriş:** bilgisayardaki sayfada çıkan kodu telefon kamerasıyla okutmak yeter.
-- **2-3 kişi de olur:** boş yerlere bot oturur, botlar kendiliğinden oynar. Sonradan gelen arkadaş bir botun yerine geçer.
-- **Oyun modları:** eşli / eşsiz, katlamalı (eşine katlanmaz), hamle süresi (20–60 sn ya da süresiz), el sayısı.
+- **Üç oyun:** ana menüde **101 Okey**, **Pişti** ya da **Uno** seçilir. Pişti ve Uno 2-4 kişiyle, okey 4 kişiyle oynanır.
+- **Botlar:** istediğiniz sandalyeye **bot koy** ile bot oturur, botlar kendiliğinden oynar. Sonradan gelen arkadaş bir botun yerine geçer.
+- **Karşılıklı masa:** pişti ve uno'da kartlar oval bir masada dağıtılır, atılan kartlar uçarak gider. Pişti yapınca ekrana büyük **PİŞTİ!** yazısı, konfeti ve titreşim gelir; uno'da yön oku, UNO! ve Yakala! düğmeleri var.
+- **Oyun modları:** okeyde eşli / eşsiz, katlamalı (eşine katlanmaz), el sayısı; piştide eşli / eşsiz ve hedef puan; uno'da hedef puan ve +2/+4 biriktirme. Hepsinde hamle süresi (20–60 sn ya da süresiz).
 - **Kolay ıstaka:** dizili perlerin toplamı ıstakanın köşesinde yazar; yetince tek dokunuşla açılır. "Seri diz" ve "Çift diz" perler arasında boşluk bırakarak dizer. Açtıktan sonra elde kalan puan, sol üstte toplam puanın görünür.
 - **İşle düğmesi:** işlenebilen taşlar işaretlenir, tek dokunuşla masaya işlenir; masadaki okey alınabiliyorsa onu da alır.
 - **Kopmaya dayanıklı:** telefonun bağlantısı koparsa kendiliğinden yeniden bağlanır. Oyun kapanıp açılsa da kaldığı yerden devam eder.
@@ -44,7 +50,7 @@ cd Okey_101
    ```
 
 3. Bilgisayarda oyun sayfası açılır, birkaç saniye içinde internet linkinin **QR kodu** çıkar. Arkadaşlarınız kodu okutur ya da linki WhatsApp'tan atarsınız.
-4. Herkes adını yazıp masada boş bir sandalyeye dokunur. Ayarlardan modu seçin; dört kişi olunca **Oyunu başlat**. Az kişiyseniz **Boş yerlere bot oturt**'a basın.
+4. Herkes adını yazıp masada boş bir sandalyeye dokunur. Üstten oyunu (**101 Okey**, **Pişti**, **Uno**) ve ayarları seçin, sonra **Oyunu başlat**. Az kişiyseniz istediğiniz sandalyeye **bot koy** ya da **Boş yerlere bot oturt**.
 
 Pencere açık kaldıkça oyun ve link çalışır. Kapatınca oyun durur; tekrar açınca kaldığı yerden devam eder.
 
@@ -82,7 +88,14 @@ Windows'taki dosyalar Node.js kurulu değilse kurmayı da teklif eder. Mac'te **
 - Süre dolarsa taş otomatik çekilip atılır.
 - Telefon kapanırsa sayfayı yenileyin; başka telefona geçtiyseniz aynı adı yazmanız yeterli. Bağlanma adresi ve QR kod menüde (☰) de var.
 
-## Kurallar
+### Pişti ve Uno'da
+
+- Telefon yan da dik de tutulabilir. Kendi kartlarınız altta, rakipler masanın etrafında oturur.
+- **Kart atmak:** karta iki kez dokunun, ya da bir kez dokunup ortadaki yığına dokunun, ya da kartı yukarı, masaya sürükleyin.
+- **Uno:** atacak kartınız yoksa desteye ya da **Kart çek**'e dokunun; çektiğiniz kart uyuyorsa atabilir ya da **Pas** diyebilirsiniz. Renk kartında renk seçme penceresi açılır. 2 kart kalınca **UNO!**'ya basın; biri demeyi unutursa **Yakala!** düğmesi çıkar.
+- El bitince sonuç tablosu gelir: piştide kart, kart puanı, pişti ve çoğunluk puanları; uno'da herkesin elinde kalan kartlar.
+
+## Okey kuralları
 
 - Herkese 21, başlayana 22 taş dağıtılır. Başlayan çekmeden bir taş atar. Her elden sonra bir sonraki oyuncu başlar.
 - **Okey**, göstergenin bir fazlasıdır (gösterge 13 ise okey 1) ve her taşın yerine geçer. İki **sahte okey** ise okey olan taşın kendisi olarak (o renk ve sayı) kullanılır.
@@ -96,6 +109,25 @@ Windows'taki dosyalar Node.js kurulu değilse kurmayı da teklif eder. Mac'te **
 - **El sonu:** biten -101 alır. Açanlar elde kalan taşların toplamını, çiftle açanlar iki katını, hiç açmayanlar 202 yazar. Okey atarak ya da çiftten bitilirse herkesin puanı iki katına çıkar. Kimse açmadan tek seferde tüm elini indirip biten -202 alır, diğerleri 404 yazar.
 - Ortada taş kalmayınca son taşı çeken oyuncu taşını atar atmaz el biter (sıradaki yandan alamaz). Açanlar elinde kalan taşların toplamını, çiftle açanlar iki katını, açmayanlar 202 yazar; elde kalan okey 101 sayılır.
 - Seçilen el sayısı bitince toplamı **en düşük** olan (eşlide en düşük takım) kazanır.
+
+## Pişti kuralları
+
+- 52'lik desteyle 2-4 kişi oynanır (4 kişide eşli de olur: karşılıklı oturanlar eş). Ortaya 4 kart konur, 3'ü kapalı, en üstteki açık (açık kart vale olmaz). Herkese 4'er kart dağıtılır; eller bitince deste bitene kadar 4'er kart daha dağıtılır.
+- Sırayla birer kart atılır. Atılan kart yerdeki en üst kartla **aynı değerdeyse** yerdeki bütün kartlar alınır. **Vale (J)** ile her zaman yerdeki bütün kartlar alınır.
+- **Pişti:** yerde tek kart varken onu aynı değerdeki kartla almak: **10 puan**. Yerdeki **As** ile pişti **20**, **Vale** ile pişti **30** puan. Tek karta vale atmak pişti sayılmaz; elin en son kartıyla yapılan pişti de sayılmaz.
+- **Kart puanları:** her As 1, her Vale 1, sinek ikili 2, karo onlu 3 puan. En çok kartı alan (eşlide takım) 3 puan daha alır; eşitlikte kimse almaz.
+- Deste ve eller bitince yerde kalan kartlar en son kart alana gider.
+- Seçilen hedef puana (51, 101 ya da 151) ilk ulaşan kazanır. Aynı elde birden çok kişi geçerse en yüksek puanlı kazanır; puanlar eşitse bir el daha oynanır.
+
+## Uno kuralları
+
+- 108 kartlık Uno destesiyle 2-4 kişi oynanır: her renkte (kırmızı, sarı, yeşil, mavi) bir 0, ikişer 1-9, ikişer **Pas** (⊘), **Yön** (⇄) ve **+2**; ayrıca 4 **renk kartı** ve 4 **+4**. Herkese 7 kart dağıtılır.
+- Yerdeki kartla **aynı renkte**, **aynı sayıda** ya da **aynı işarette** bir kart atılır. Renk kartı ve +4 her zaman atılır, atan rengi seçer.
+- Atacak kart yoksa desteden bir kart çekilir; çekilen kart uyuyorsa hemen atılabilir, yoksa sıra geçer.
+- **Pas:** sıradaki atlanır. **Yön:** yön değişir (iki kişide pas gibi). **+2:** sıradaki 2 kart çeker, sırası geçer. **+4:** sıradaki 4 kart çeker, sırası geçer.
+- **Biriktirme** (ayarlardan açılırsa): +2 gelen +2 ya da +4 atıp cezayı büyütüp sıradakine aktarabilir; +4 üstüne +4 atılır. Karşılık veremeyen toplamı çeker.
+- 2 kartı kalan **UNO!** der. Demeden 1 karta inen, sıradaki oyuncu oynamadan önce biri **Yakala!** derse 2 kart çeker. Botlar da yakalar.
+- Elini ilk bitiren, rakiplerin elinde kalan kartların puanını alır: sayılar kendi değeri, Pas/Yön/+2 20, renk kartı ve +4 50 puan. Hedef puana (100, 200, 300 ya da 500) ilk ulaşan kazanır.
 
 ## İnternet linki nasıl çalışıyor?
 
@@ -123,11 +155,14 @@ Daha ayrıntılı Türkçe kılavuz: [NASIL OYNANIR.txt](NASIL%20OYNANIR.txt)
 | --- | --- |
 | `baslat.js` | Başlatıcı: oyunu açar, `link` ile tüneli kurar, bilgisayarın uyumasını engeller |
 | `server.js` | HTTP sunucusu; anlık güncellemeler SSE ile, kesilirse yoklama ile |
-| `game.js` | Masa, sıra, süre, açış/işleme/ceza ve puan hesabı (bütün kurallar sunucuda) |
-| `bot.js` | Boş koltuklar için bilgisayar oyuncusu |
+| `game.js` | Masa, lobi, oyun seçimi, sıra, süre; okeyin açış/işleme/ceza ve puan hesabı (bütün kurallar sunucuda) |
+| `pisti.js` | Pişti: dağıtım, alma, pişti ve kart puanları, eşli oyun, pişti botu |
+| `uno.js` | Uno: deste, Pas/Yön/+2/+4, biriktirme, UNO deme ve yakalama, puanlama, uno botu |
+| `lib.js` | Oyunların ortak yardımcıları (karıştırma, sıra, süre, kayıt) |
+| `bot.js` | Boş koltuklar için bilgisayar oyuncusu (okey) ve kart oyunlarında botların zamanlaması |
 | `public/engine.js` | Taş, seri/grup/çift kontrolü ve ıstaka dizme (sunucu ve telefon ortak kullanır) |
-| `public/` | Telefonlarda açılan tek sayfalık arayüz (`app.js`, `style.css`, `qr.js`) |
-| `tests/` | Kural testleri, 200 oyunluk simülasyon ve HTTP testi |
+| `public/` | Telefonlarda açılan tek sayfalık arayüz (`app.js`, `cards.js` pişti/uno masası, `style.css`, `qr.js`) |
+| `tests/` | Okey, pişti ve uno kural testleri, botlarla tam oyunlar, 200 oyunluk simülasyon ve HTTP testi |
 
 ```
 npm test

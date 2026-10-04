@@ -22,8 +22,9 @@
   <div class="lwrap">
     <header class="lhead">
       <div class="lmark"><span class="mt c0">10</span><span class="mt c2">1</span></div>
-      <div><h1>101 Okey</h1><p>Dört kişilik masa · eksik varsa bot oturur</p></div>
+      <div><h1 id="ltitle">101 Okey</h1><p>Okey · Pişti · Uno — eksik varsa bot oturur</p></div>
     </header>
+    <div id="lgames"></div>
     <form id="nameBar" class="namebar hidden" autocomplete="off">
       <label for="nameIn">Adın</label>
       <input id="nameIn" maxlength="14" placeholder="Adını yaz" enterkeyhint="done">
@@ -59,6 +60,21 @@
   </div>
 </div>
 
+<div id="cg" class="screen hidden">
+  <div id="cgt">
+    <div class="cgs" id="cgs-top"></div>
+    <div class="cgs" id="cgs-left"></div>
+    <div id="cgmid"><div id="cgc"></div><div id="cgst" class="status"></div></div>
+    <div class="cgs" id="cgs-right"></div>
+    <button id="cgMenu" class="iconbtn" aria-label="Menü"><i></i><i></i><i></i></button>
+  </div>
+  <div id="cgh">
+    <div id="cgtime" class="timebar"><i></i></div>
+    <div id="cghand"></div>
+    <div id="cgact"></div>
+  </div>
+</div>
+
 <div id="overlay" class="hidden"></div>
 <div id="modal" class="hidden"></div>
 <div id="toast"></div>
@@ -68,6 +84,7 @@
 
 <script src="engine.js"></script>
 <script src="qr.js"></script>
+<script src="cards.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

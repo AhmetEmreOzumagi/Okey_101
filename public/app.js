@@ -34,6 +34,11 @@
   // Avatar içi: bot için robot, kişi için baş harf
   const avatarText = (p) => (p && p.bot ? '🤖' : esc(initial(p && p.name)));
 
+  // Masadaki oyun pişti ya da uno mu (okey dışındaki kart oyunları ayrı ekranda)
+  const isCard = (v) => !!(v && v.round && v.round.game && v.round.game !== 'okey');
+  const GAME_TITLE = { okey: '101 Okey', pisti: 'Pişti', uno: 'Uno' };
+  function cardCtx() { return { api, toast, esc, modal, closeModal, avatarText, showMenu }; }
+
   // =============== Bağlantı ===============
   let es = null, lastSeen = Date.now(), pollTimer = null, polling = false;
 
@@ -96,7 +101,7 @@
       .finally(() => { busy--; renderActionsSoon(); });
   }
   let actTimer = 0;
-  function renderActionsSoon() { clearTimeout(actTimer); actTimer = setTimeout(() => { if (view && view.round && !drag) renderActions(); }, 0); }
+  function renderActionsSoon() { clearTimeout(actTimer); actTimer = setTimeout(() => { if (view && view.round && !drag && !isCard(view)) renderActions(); }, 0); }
 
   function onView(v) {
     if (!v || typeof v !== 'object') return;
@@ -477,11 +482,23 @@
     if (boot) boot.style.display = 'none';
     const v = view;
     const inGame = v.me >= 0 && v.phase !== 'lobby' && v.round;
+    const card = !!inGame && isCard(v);
     document.body.classList.toggle('in-game', !!inGame);
+    document.body.classList.toggle('card-game', card);
     $('#lobby').classList.toggle('hidden', !!inGame);
-    $('#game').classList.toggle('hidden', !inGame);
+    $('#game').classList.toggle('hidden', !inGame || card);
+    $('#cg').classList.toggle('hidden', !card);
     const before = lastRendered;
-    if (inGame) {
+    if (card) {
+      window.CardUI.render(v, cardCtx());
+      window.CardUI.overlay(v, cardCtx());
+      const mine = myTurn();
+      if (mine && !lastTurnMine) {
+        warned = false;
+        if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) { try { navigator.vibrate(120); } catch (e) {} }
+      }
+      lastTurnMine = mine;
+    } else if (inGame) {
       const rects = captureRects();
       renderGame();
       renderOverlay();
@@ -504,8 +521,27 @@
 
   // ---------- Lobi ----------
   let nameInit = false;
+  function gamesHTML(v) {
+    const g = v.settings.game || 'okey';
+    const can = v.me >= 0 && v.phase === 'lobby';
+    const CU = window.CardUI;
+    const icons = {
+      okey: '<span class="gt c0">1</span><span class="gt c2">0</span><span class="gt c3">1</span>',
+      pisti: CU.pcard(10, 'mini') + CU.pcard(13, 'mini'),
+      uno: CU.ucard(7, 'mini') + CU.ucard(104, 'mini'),
+    };
+    const item = (id, title, sub) => `<button class="gpick${g === id ? ' on' : ''}" data-set="game" data-val="${id}"${can || g === id ? '' : ' disabled'}>` +
+      `<span class="gicon ${id}">${icons[id]}</span><span class="gtx"><b>${title}</b><small>${sub}</small></span></button>`;
+    return '<div class="gpicks">' + item('okey', '101 Okey', '4 kişi · taşlarla') + item('pisti', 'Pişti', '2-4 kişi · iskambil') + item('uno', 'Uno', '2-4 kişi · renkli kartlar') + '</div>' +
+      (can ? '' : v.phase === 'lobby' ? '<p class="gnote">Oyunu masaya oturan seçer.</p>' : '');
+  }
+
   function renderLobby(before) {
-    const v = view, me = v.me, seated = me >= 0, lobby = v.phase === 'lobby', team = v.settings.mode === 'team';
+    const v = view, me = v.me, seated = me >= 0, lobby = v.phase === 'lobby';
+    const game = v.settings.game || 'okey';
+    const team = v.settings.mode === 'team' && game !== 'uno';
+    $('#lgames').innerHTML = gamesHTML(v);
+    $('#ltitle').textContent = GAME_TITLE[game] || '101 Okey';
     $('#nameBar').classList.toggle('hidden', seated);
     if (!nameInit) { $('#nameIn').value = myName; nameInit = true; }
     const base = seated ? me : 0;
@@ -514,14 +550,22 @@
     let h = '<div class="ltable"><div class="board"></div><div class="tcenter">';
     if (lobby) {
       const st = v.settings;
-      h += '<div class="tags">' +
-        `<span class="tag">${team ? 'Eşli' : 'Eşsiz'}</span>` +
-        (st.katlamali ? '<span class="tag">Katlamalı</span>' : '') +
-        `<span class="tag">${st.turnSecs ? st.turnSecs + ' sn' : 'Süresiz'}</span>` +
-        `<span class="tag">${st.rounds} el</span></div>`;
-      h += `<div class="count">${filled} / 4 oyuncu</div>`;
+      const secs = `<span class="tag">${st.turnSecs ? st.turnSecs + ' sn' : 'Süresiz'}</span>`;
+      if (game === 'okey') {
+        h += '<div class="tags">' +
+          `<span class="tag">${team ? 'Eşli' : 'Eşsiz'}</span>` +
+          (st.katlamali ? '<span class="tag">Katlamalı</span>' : '') + secs +
+          `<span class="tag">${st.rounds} el</span></div>`;
+      } else if (game === 'pisti') {
+        h += `<div class="tags"><span class="tag">${team ? 'Eşli' : 'Eşsiz'}</span>${secs}<span class="tag">${st.pistiTarget} puan</span></div>`;
+      } else {
+        h += `<div class="tags">${secs}<span class="tag">${st.unoTarget} puan</span>${st.unoStack ? '<span class="tag">+2/+4 biriktirme</span>' : ''}</div>`;
+      }
+      const need = game === 'okey' || team ? 4 : 2;
+      const ready = game === 'okey' ? filled === 4 : filled >= need;
+      h += `<div class="count">${game === 'okey' ? `${filled} / 4 oyuncu` : `${filled} oyuncu · ${need === 4 ? '4 kişi gerekli' : 'en az 2 kişi'}`}</div>`;
       if (seated) {
-        h += `<button class="btn primary" data-act="start"${filled === 4 ? '' : ' disabled'}>Oyunu başlat</button>`;
+        h += `<button class="btn primary" data-act="start"${ready ? '' : ' disabled'}>Oyunu başlat</button>`;
         if (filled < 4) h += `<button class="lnk botfill" data-act="fillBots">Boş yerlere bot oturt (${4 - filled})</button>`;
       } else h += '<div class="count">Adını yaz, boş bir sandalyeye dokun</div>';
     } else {
@@ -562,13 +606,28 @@
     const st = v.settings, dis = !(seated && lobby);
     const seg = (key, opts, cur) => '<div class="seg">' + opts.map((o) =>
       `<button data-set="${key}" data-val="${o[0]}" class="${String(o[0]) === String(cur) ? 'on' : ''}"${dis ? ' disabled' : ''}>${o[1]}</button>`).join('') + '</div>';
-    let sh = '<div class="card-dark"><h2>Oyun ayarları</h2>';
-    sh += '<div class="setrow"><span class="lbl">Oyun</span>' + seg('mode', [['solo', 'Eşsiz'], ['team', 'Eşli']], st.mode) +
-      (team ? '<span class="help">Karşılıklı oturanlar eş olur, puanlar toplanır. Biri bitince eşinin el cezası silinir.</span>' : '') + '</div>';
-    sh += '<div class="setrow"><span class="lbl">Katlamalı</span>' + seg('katlamali', [['false', 'Kapalı'], ['true', 'Açık']], st.katlamali) +
-      (st.katlamali ? '<span class="help">Sonra açan, rakibinin açtığından en az 1 fazlasıyla açar (çiftte de 1 çift fazla). Eşine katlanmaz.</span>' : '') + '</div>';
-    sh += '<div class="setrow"><span class="lbl">Hamle süresi</span>' + seg('turnSecs', [[20, '20 sn'], [30, '30 sn'], [45, '45'], [60, '60'], [0, 'Yok']], st.turnSecs) + '</div>';
-    sh += '<div class="setrow"><span class="lbl">El sayısı</span>' + seg('rounds', [[1, '1'], [3, '3'], [5, '5'], [7, '7'], [9, '9'], [11, '11']], st.rounds) + '</div>';
+    let sh = `<div class="card-dark"><h2>${GAME_TITLE[game]} ayarları</h2>`;
+    const secsRow = '<div class="setrow"><span class="lbl">Hamle süresi</span>' + seg('turnSecs', [[20, '20 sn'], [30, '30 sn'], [45, '45'], [60, '60'], [0, 'Yok']], st.turnSecs) + '</div>';
+    if (game === 'okey') {
+      sh += '<div class="setrow"><span class="lbl">Oyun</span>' + seg('mode', [['solo', 'Eşsiz'], ['team', 'Eşli']], st.mode) +
+        (team ? '<span class="help">Karşılıklı oturanlar eş olur, puanlar toplanır. Biri bitince eşinin el cezası silinir.</span>' : '') + '</div>';
+      sh += '<div class="setrow"><span class="lbl">Katlamalı</span>' + seg('katlamali', [['false', 'Kapalı'], ['true', 'Açık']], st.katlamali) +
+        (st.katlamali ? '<span class="help">Sonra açan, rakibinin açtığından en az 1 fazlasıyla açar (çiftte de 1 çift fazla). Eşine katlanmaz.</span>' : '') + '</div>';
+      sh += secsRow;
+      sh += '<div class="setrow"><span class="lbl">El sayısı</span>' + seg('rounds', [[1, '1'], [3, '3'], [5, '5'], [7, '7'], [9, '9'], [11, '11']], st.rounds) + '</div>';
+    } else if (game === 'pisti') {
+      sh += '<div class="setrow"><span class="lbl">Oyun</span>' + seg('mode', [['solo', 'Eşsiz'], ['team', 'Eşli']], st.mode) +
+        '<span class="help">' + (team ? 'Dört kişi oynanır, karşılıklı oturanlar eş olur, puanlar toplanır.' : '2, 3 ya da 4 kişi, herkes kendi için oynar.') + '</span></div>';
+      sh += '<div class="setrow"><span class="lbl">Hedef puan</span>' + seg('pistiTarget', [[51, '51'], [101, '101'], [151, '151']], st.pistiTarget) + '</div>';
+      sh += secsRow;
+      sh += '<p class="help">Pişti 10, As ile pişti 20, Vale ile pişti 30 puan. As ve Vale 1, sinek ikili 2, karo onlu 3, en çok kart 3 puan.</p>';
+    } else {
+      sh += '<div class="setrow"><span class="lbl">Hedef puan</span>' + seg('unoTarget', [[100, '100'], [200, '200'], [300, '300'], [500, '500']], st.unoTarget) + '</div>';
+      sh += '<div class="setrow"><span class="lbl">+2 / +4 biriktirme</span>' + seg('unoStack', [['false', 'Kapalı'], ['true', 'Açık']], st.unoStack) +
+        '<span class="help">' + (st.unoStack ? '+2 gelince +2 ya da +4, +4 gelince +4 atıp cezayı sıradakine aktarabilirsin.' : '+2 ya da +4 gelen kartları çeker, sırası geçer.') + '</span></div>';
+      sh += secsRow;
+      sh += '<p class="help">2, 3 ya da 4 kişi. Elinde 2 kart kalınca "UNO!" demeyi unutma.</p>';
+    }
     sh += '</div>';
     $('#lsettings').innerHTML = sh;
     $('#ljoin').innerHTML = '<div class="card-dark"><h2>Arkadaşların nasıl girecek?</h2>' + joinHTML(false) + '</div>';
@@ -844,19 +903,24 @@
   }
 
   function showScores() {
-    const v = view, team = isTeam();
+    const v = view;
+    const card = isCard(v);
+    const team = card ? !!v.round.team : isTeam();
+    const cols = [0, 1, 2, 3].filter((i) => (card ? v.round.active[i] : true));
+    const dot = (i) => (team ? `<span class="tdot ${i % 2 === 0 ? 'ta' : 'tb'}"></span>` : '');
     let h = '<h2>Puan tablosu</h2>';
     if (!v.history.length) h += '<p>Henüz biten el yok.</p>';
     else {
-      h += '<table class="score"><tr><th>El</th>' + v.seats.map((p, i) => `<th class="num">${team ? `<span class="tdot ${teamCls(i)}"></span>` : ''}${esc(p ? p.name : '')}</th>`).join('') +
+      h += '<table class="score"><tr><th>El</th>' + cols.map((i) => `<th class="num">${dot(i)}${esc(v.seats[i] ? v.seats[i].name : '')}</th>`).join('') +
         (team ? '<th class="num"><span class="tdot ta"></span>Takım</th><th class="num"><span class="tdot tb"></span>Takım</th>' : '') + '</tr>';
       v.history.forEach((x) => {
-        h += `<tr><td>${x.no}</td>` + x.total.map((n) => `<td class="num ${n < 0 ? 'neg' : ''}">${n}</td>`).join('') +
+        h += `<tr><td>${x.no}</td>` + cols.map((i) => `<td class="num ${x.total[i] < 0 ? 'neg' : ''}">${x.total[i]}</td>`).join('') +
           (team ? `<td class="num">${x.total[0] + x.total[2]}</td><td class="num">${x.total[1] + x.total[3]}</td>` : '') + '</tr>';
       });
-      h += '<tr class="team"><td>Toplam</td>' + v.totals.map((n) => `<td class="num">${n}</td>`).join('') +
+      h += '<tr class="team"><td>Toplam</td>' + cols.map((i) => `<td class="num">${v.totals[i]}</td>`).join('') +
         (team ? `<td class="num">${v.teamTotals[0]}</td><td class="num">${v.teamTotals[1]}</td>` : '') + '</tr></table>';
-      h += `<p class="sub" style="margin-top:10px">${v.completed} / ${v.settings.rounds} el oynandı. En düşük puan kazanır. Deste bitince açan elindeki taşların toplamını (çiftle açan iki katını), açmayan 202 yazar.</p>`;
+      if (card) h += `<p class="sub" style="margin-top:10px">${v.completed} el oynandı. Hedef ${v.round.target} puan; en yüksek puan kazanır.</p>`;
+      else h += `<p class="sub" style="margin-top:10px">${v.completed} / ${v.settings.rounds} el oynandı. En düşük puan kazanır. Deste bitince açan elindeki taşların toplamını (çiftle açan iki katını), açmayan 202 yazar.</p>`;
     }
     h += '<div class="btns"><button class="btn primary" id="closeM">Kapat</button></div>';
     modal(h, (m) => { m.querySelector('#closeM').onclick = closeModal; });
@@ -864,6 +928,10 @@
 
   function showRules() {
     const st = view.settings;
+    if (isCard(view)) {
+      modal(window.CardUI.rulesHTML(view.round.game, st) + '<div class="btns"><button class="btn primary" id="closeM">Tamam</button></div>', (m) => { m.querySelector('#closeM').onclick = closeModal; });
+      return;
+    }
     const h = '<h2>Kısa kurallar</h2><ul class="rules">' +
       '<li>Herkese 21, başlayana 22 taş. Başlayan çekmeden bir taş atar. Okey, göstergenin bir üstüdür. Her elden sonra bir sonraki oyuncu başlar.</li>' +
       '<li>Sıranda desteden çek ya da soldakinin attığını al. Yandan aldığın taşı o anda açışta ya da işlemede kullanırsın; kullanmazsan "Geri bırak" ile yerine döner.</li>' +
@@ -930,17 +998,16 @@
 
   // =============== Süre ===============
   function updateTimer() {
-    const bar = $('#timebar');
+    const bars = $$('#timebar, #cgtime');
     if (!view || !view.round || view.phase !== 'playing' || !deadline) {
-      bar.firstElementChild.style.width = '0';
+      bars.forEach((b) => { b.firstElementChild.style.width = '0'; });
       return;
     }
     const rem = Math.max(0, deadline - performance.now());
     const frac = Math.min(1, rem / turnTotal);
     const low = rem < 10000;
     const mine = myTurn();
-    bar.firstElementChild.style.width = mine ? (frac * 100).toFixed(2) + '%' : '0';
-    bar.classList.toggle('low', low);
+    bars.forEach((b) => { b.firstElementChild.style.width = mine ? (frac * 100).toFixed(2) + '%' : '0'; b.classList.toggle('low', low); });
     $$('.who.turn .pg').forEach((c) => { c.style.strokeDashoffset = (100 * (1 - frac)).toFixed(2); c.classList.toggle('low', low); });
     const s = $('#secs');
     if (s) { s.textContent = Math.ceil(rem / 1000); s.classList.toggle('low', low); }
@@ -1179,7 +1246,7 @@
     const set = t.closest('[data-set]');
     if (set) {
       const k = set.dataset.set, raw = set.dataset.val;
-      const val = k === 'katlamali' ? raw === 'true' : (k === 'mode' ? raw : +raw);
+      const val = k === 'katlamali' || k === 'unoStack' ? raw === 'true' : (k === 'mode' || k === 'game' ? raw : +raw);
       api('settings', { [k]: val });
       return;
     }
@@ -1209,7 +1276,7 @@
     if (t.closest('[data-m="scores"]')) { showScores(); return; }
     const d2 = t.closest('[data-do2]');
     if (d2) { api(d2.dataset.do2, null, d2.dataset.do2 === 'next'); return; }
-    if (!view || !view.round) return;
+    if (!view || !view.round || isCard(view)) return;
     // Oyun
     if (t.closest('#menuBtn')) { showMenu(); return; }
     const d = t.closest('[data-do]');
