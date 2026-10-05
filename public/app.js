@@ -571,11 +571,14 @@
       if (seated) {
         h += `<button class="btn primary" data-act="start"${ready ? '' : ' disabled'}>Oyunu başlat</button>`;
         if (filled < 4) h += `<button class="lnk botfill" data-act="fillBots">Boş yerlere bot oturt (${4 - filled})</button>`;
+      } else if (filled === 4) {
+        const clearable = v.seats.some((p) => p && (p.bot || !p.online));
+        h += `<div class="count">${clearable ? 'Masa dolu: bağlantısı olmayanın ya da botun altındaki <b>çıkar</b>\'a dokun, boşalan yere otur' : 'Masa dolu'}</div>`;
       } else h += '<div class="count">Adını yaz, boş bir sandalyeye dokun</div>';
     } else {
-      const bots = v.seats.some((p) => p && p.bot);
+      const open = v.seats.some((p) => p && (p.bot || !p.online));
       h += '<div class="count">Oyun sürüyor</div><div class="teamnote">' +
-        (seated ? '' : 'Masadaysan kendi sandalyene dokun, yerine dönersin.' + (bots ? ' Yeni geldiysen adını yaz, bir botun sandalyesine dokun; onun yerine oynarsın.' : '')) + '</div>';
+        (seated ? '' : 'Masadaysan kendi sandalyene dokun, yerine dönersin.' + (open ? ' Yeni geldiysen adını yaz, bir botun ya da bağlantısı kopan birinin altındaki <b>yerine geç</b>\'e dokun; onun elindekilerle oynarsın.' : '')) + '</div>';
     }
     h += '</div>';
     for (let s = 0; s < 4; s++) {
@@ -594,8 +597,13 @@
         else if (team && seated && s === (me + 2) % 4) h += p.bot ? 'eşin (bot)' : 'eşin';
         else if (p.bot) h += canTake ? `<button class="lnk" data-takeover="${s}">yerine geç</button>` : 'bot';
         else h += p.online ? 'bağlı' : 'bağlantı yok';
-        if (lobby && seated && !isMe && !p.online) h += ` <button class="lnk" data-kick="${s}">çıkar</button>`;
-        if (lobby && seated && p.bot) h += ` <button class="lnk" data-kick="${s}">çıkar</button>`;
+        const off = !p.bot && !p.online;
+        // Masaya oturmamış biri de bağlantısı kopanı ya da botu çıkarabilir (masa dolu kalmasın)
+        if (lobby && !isMe && (p.bot || off)) h += ` <button class="lnk" data-kick="${s}">çıkar</button>`;
+        if (!lobby && !isMe && off) {
+          h += '<span class="lacts">' + (seated ? '' : `<button class="lnk" data-takeover="${s}">yerine geç</button>`) +
+            `<button class="lnk" data-botseat="${s}">bot koy</button></span>`;
+        }
         h += '</div>';
       } else {
         h += `<button class="lav empty" data-sit="${s}" ${lobby ? '' : 'disabled'}>+</button><div class="lname" style="opacity:.75">Boş</div>` +
@@ -960,8 +968,18 @@
       (m) => { m.querySelector('#closeM').onclick = closeModal; });
   }
 
+  // Bağlantısı kopan birinin yerine bot oturt (kişi dönerse "yerine geç" ile devralır)
+  function botInstead(seat) {
+    const p = view && view.seats[seat];
+    if (!p) return;
+    confirmBox(`${p.name} yerine bot otursun mu?`, `${p.name} bağlı değil. Yerine bot oturur ve onun eliyle oynar. ${p.name} dönerse botun altındaki "yerine geç" ile kaldığı yerden devam eder.`, 'Bot koy')
+      .then((y) => y && api('botSeat', { seat }));
+  }
+
   function showMenu() {
+    const away = view ? view.seats.map((p, i) => (p && !p.bot && !p.online && i !== view.me ? i : -1)).filter((i) => i >= 0) : [];
     const h = '<h2>Menü</h2><div class="menu">' +
+      away.map((i) => `<button class="btn" data-mm="bot:${i}">${esc(view.seats[i].name)} yerine bot koy <small>(bağlantısı yok)</small></button>`).join('') +
       '<button class="btn" data-mm="scores">Puan tablosu</button>' +
       '<button class="btn" data-mm="invite">Bağlanma adresi (QR)</button>' +
       '<button class="btn" data-mm="full">Tam ekran</button>' +
@@ -973,7 +991,8 @@
         b.onclick = () => {
           const a = b.getAttribute('data-mm');
           closeModal();
-          if (a === 'scores') showScores();
+          if (a.startsWith('bot:')) botInstead(+a.slice(4));
+          else if (a === 'scores') showScores();
           else if (a === 'invite') showInvite();
           else if (a === 'rules') showRules();
           else if (a === 'full') goFull();
@@ -1249,6 +1268,8 @@
     if (rec) { const s = +rec.dataset.reclaim; joinAs(view.seats[s].name, s); return; }
     const kick = t.closest('[data-kick]');
     if (kick) { api('kick', { seat: +kick.dataset.kick }); return; }
+    const bs = t.closest('[data-botseat]');
+    if (bs) { botInstead(+bs.dataset.botseat); return; }
     const set = t.closest('[data-set]');
     if (set) {
       const k = set.dataset.set, raw = set.dataset.val;
@@ -1273,7 +1294,7 @@
         const nb = $('#nameBar');
         nb.classList.remove('shake'); void nb.offsetWidth; nb.classList.add('shake');
         $('#nameIn').focus();
-        toast('Önce adını yaz, sonra botun sandalyesine dokun.');
+        toast('Önce adını yaz, sonra "yerine geç"e dokun.');
         return;
       }
       joinAs(name, +take.dataset.takeover);

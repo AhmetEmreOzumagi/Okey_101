@@ -122,6 +122,16 @@ geçtiyseniz aynı adı yazmanız yeterli. Adres lazımsa oyundaki menüde (☰)
 Bilgisayardaki pencere kapanırsa başlatma dosyasına tekrar çift tıklayın;
 oyun kaldığı yerden devam eder.
 
+BİRİ SAYFAYI KAPATIP GİTTİYSE, MASA DOLUYSA
+- Lobide: bağlantısı olmayan birinin (kırmızı nokta, "bağlantı yok") ya da
+  botun altındaki "çıkar"a dokunun. Masaya oturmamış olsanız da olur.
+  Sonra adınızı yazıp boşalan sandalyeye oturun. Bağlı olan biri çıkarılamaz.
+- Lobide 3 dakikadır bağlı olmayan kendiliğinden masadan kalkar.
+- Oyun sürerken: menüden (☰) "... yerine bot koy" deyin, bot onun eliyle
+  oynamaya devam eder. Yeni gelen biri adını yazıp bağlantısı kopanın ya da
+  botun altındaki "yerine geç"e dokunursa onun yerinden devam eder. Giden
+  kişi geri gelirse o da botun altındaki "yerine geç" ile yerine döner.
+
 BAZI CİHAZLAR GİREMİYORSA ("Bu siteye ulaşılamıyor")
 Sorun oyunda değil ağdadır. Sırayla bakın:
 1. Herkes bilgisayarla AYNI Wi-Fi'da mı? Bilgisayarın bağlı olduğu ağın adı

@@ -824,3 +824,6 @@ body.card-game #overlay, body.card-game #modal { -webkit-backdrop-filter: none; 
 .cripple.c-r { --rc: #df3a3f; } .cripple.c-y { --rc: #f0b42a; } .cripple.c-g { --rc: #2c9c59; } .cripple.c-b { --rc: #2d6bd0; }
 .conf { will-change: transform, opacity; }
 .ftext.win { font-size: 30px; color: #ffd76a; text-shadow: 0 3px 0 #6b4400, 0 8px 18px rgba(0, 0, 0, .5); }
+/* Oyun sürerken bağlantısı kopanın altındaki "yerine geç · bot koy" ayrı satırda, bölünmeden */
+.lsub { flex-wrap: wrap; justify-content: center; white-space: nowrap; }
+.lacts { display: flex; flex-basis: 100%; justify-content: center; gap: 12px; margin-top: 1px; }

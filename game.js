@@ -120,18 +120,20 @@ function join(s, name, token, isOnline, wantSeat) {
     addLog(s, `${s.seats[same].name} geri döndü.`);
     return { seat: same, token: s.seats[same].token };
   }
+  // Botun ya da bağlantısı kopmuş birinin yeri boşaltılabilir/devralınabilir
+  const replaceable = (p) => p && (p.bot || !isOnline(p.token));
   if (s.phase !== 'lobby') {
-    // Oyun sürerken gelen biri bir botun yerine geçebilir (elindeki taşlarla devam eder)
-    const botSeat = wantSeat >= 0 && wantSeat < 4 && s.seats[wantSeat] && s.seats[wantSeat].bot ? wantSeat : -1;
-    if (botSeat < 0) fail(s.seats.some((p) => p && p.bot) ? 'Oyun sürüyor. Bir botun yerine geçmek için botun sandalyesine dokun.' : 'Oyun başladı, masa dolu. Masadaysan adını aynen yaz.');
-    const old = s.seats[botSeat].name;
+    // Oyun sürerken gelen biri bir botun ya da bağlantısı kopan birinin yerine geçebilir (elindekilerle devam eder)
+    const take = wantSeat >= 0 && wantSeat < 4 && replaceable(s.seats[wantSeat]) ? wantSeat : -1;
+    if (take < 0) fail(s.seats.some(replaceable) ? 'Oyun sürüyor. Bir botun ya da bağlantısı kopan birinin altındaki "yerine geç"e dokun.' : 'Oyun başladı, masa dolu. Masadaysan adını aynen yaz.');
+    const old = s.seats[take].name;
     const t = newToken();
-    s.seats[botSeat] = { name, token: t };
+    s.seats[take] = { name, token: t };
     addLog(s, `${name}, ${old} yerine oyuna girdi.`);
-    return { seat: botSeat, token: t };
+    return { seat: take, token: t };
   }
   let free = wantSeat >= 0 && wantSeat < 4 && !s.seats[wantSeat] ? wantSeat : s.seats.findIndex((p) => !p);
-  if (free < 0) fail('Masa dolu (4 kişi).');
+  if (free < 0) fail(s.seats.some(replaceable) ? 'Masa dolu. Bağlantısı olmayan birinin ya da botun altındaki "çıkar"a dokun, boşalan yere otur.' : 'Masa dolu (4 kişi).');
   const t = newToken();
   s.seats[free] = { name, token: t };
   addLog(s, `${name} masaya oturdu.`);
@@ -539,12 +541,25 @@ function lobbyAction(s, seat, a, isOnline) {
       return;
     }
     case 'kick': {
-      if (s.phase !== 'lobby') fail('Oyun sürerken çıkarılamaz.');
+      // Masaya oturmamış biri de yapabilir: bağlantısı kopanı ya da botu kaldırıp yer açar
+      if (s.phase !== 'lobby') fail('Oyun sürerken çıkarılamaz; istersen yerine bot koy.');
       const t = a.seat;
-      if (!s.seats[t]) fail('Koltuk boş.');
+      if (!(t >= 0 && t < 4) || !s.seats[t]) fail('Koltuk boş.');
       if (!s.seats[t].bot && isOnline(s.seats[t].token)) fail('Bağlı oyuncu çıkarılamaz.');
       addLog(s, `${nameOf(s, t)} masadan çıkarıldı.`);
       s.seats[t] = null;
+      return;
+    }
+    case 'botSeat': {
+      // Bağlantısı kopan birinin yerine bot oturur (oyun sürerken de); kişi dönerse "yerine geç" ile devralır
+      const t = a.seat;
+      const p = s.seats[t];
+      if (!(t >= 0 && t < 4) || !p) fail('Koltuk boş.');
+      if (p.bot) fail('Orada zaten bot var.');
+      if (isOnline(p.token)) fail('Bağlı oyuncunun yerine bot konmaz.');
+      const bot = { name: botName(s), token: newToken(), bot: true };
+      s.seats[t] = bot;
+      addLog(s, `${p.name} yerine ${bot.name} oturdu.`);
       return;
     }
     case 'rounds':
@@ -611,6 +626,20 @@ function lobbyAction(s, seat, a, isOnline) {
   }
 }
 
+// Lobide uzun süredir bağlantısı olmayanlar kendiliğinden kalkar (telefonu kapatıp giden yer tutmasın)
+function dropAway(s, isAway) {
+  if (s.phase !== 'lobby') return false;
+  let changed = false;
+  s.seats.forEach((p, i) => {
+    if (p && !p.bot && isAway(p.token)) {
+      addLog(s, `${p.name} uzun süredir bağlı değil, masadan kalktı.`);
+      s.seats[i] = null;
+      changed = true;
+    }
+  });
+  return changed;
+}
+
 function teamTotals(totals) {
   return [totals[0] + totals[2], totals[1] + totals[3]];
 }
@@ -668,4 +697,4 @@ function view(s, token, isOnline, extra) {
   return v;
 }
 
-module.exports = { create, normalize, join, lobbyAction, act, view, seatOf, deal, tick, openReq, pairsAllowed, GameError, newToken, TURN_CHOICES, GAMES, CARD };
+module.exports = { create, normalize, join, lobbyAction, act, view, seatOf, deal, tick, dropAway, openReq, pairsAllowed, GameError, newToken, TURN_CHOICES, GAMES, CARD };

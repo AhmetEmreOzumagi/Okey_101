@@ -19,6 +19,7 @@ Arkadaşlarla telefondan oynanan masa oyunları: **101 Okey**, **Pişti** ve **U
 - **Kolay ıstaka:** dizili perlerin toplamı ıstakanın köşesinde yazar; yetince tek dokunuşla açılır. "Seri diz" ve "Çift diz" perler arasında boşluk bırakarak dizer. Açtıktan sonra elde kalan puan, sol üstte toplam puanın görünür.
 - **İşle düğmesi:** işlenebilen taşlar işaretlenir, tek dokunuşla masaya işlenir; masadaki okey alınabiliyorsa onu da alır.
 - **Kopmaya dayanıklı:** telefonun bağlantısı koparsa kendiliğinden yeniden bağlanır. Oyun kapanıp açılsa da kaldığı yerden devam eder.
+- **Masa dolu kalmaz:** sayfayı kapatıp giden birinin yeri, masaya oturmadan da **çıkar** ile boşaltılır; lobide 3 dakika bağlı olmayan kendiliğinden kalkar. Oyun sürerken bağlantısı kopanın yerine **bot koy**ulur ya da yeni gelen **yerine geç**er.
 - **Kurallar oyunda kontrol edilir:** açış puanı, işleme, okey ve ceza puanları, el sonu hesabı.
 - **Kurulum derdi yok:** sadece Node.js gerekir; `npm install` yok, ek paket yok.
 
@@ -87,6 +88,8 @@ Windows'taki dosyalar Node.js kurulu değilse kurmayı da teklif eder. Mac'te **
 - Okey elinizde de masadaki perlerde de ters (yeşil sırtı görünür) durur; sahte okey sadece ✿ işaretiyle görünür. Ortada sadece gösterge vardır. Kimin elinde kaç taş kaldığı görünmez.
 - Süre dolarsa taş otomatik çekilip atılır.
 - Telefon kapanırsa sayfayı yenileyin; başka telefona geçtiyseniz aynı adı yazmanız yeterli. Bağlanma adresi ve QR kod menüde (☰) de var.
+- **Masa doluysa:** lobide bağlantısı olmayan birinin ya da botun altındaki **çıkar**'a dokunun (masaya oturmadan da olur), boşalan yere oturun. Lobide 3 dakikadır bağlı olmayan zaten kendiliğinden kalkar.
+- **Oyun sürerken biri giderse:** menüden (☰) **"… yerine bot koy"** deyin, bot onun eliyle devam eder. Yeni gelen biri adını yazıp bağlantısı kopanın ya da botun altındaki **yerine geç**'e dokunarak onun yerinden oynar.
 
 ### Pişti ve Uno'da
 

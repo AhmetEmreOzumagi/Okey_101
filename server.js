@@ -75,11 +75,20 @@ buildPage();
 
 // ---------- Bağlantılar ----------
 const clients = new Set(); // {res, token, ip}
+// Bağlı sayılmak: canlı bağlantısı açık ya da son birkaç saniyede sayfayı yoklamış olmak
+const polledAt = new Map(); // token -> son yoklama/istek zamanı (canlı bağlantısı olmayan telefonlar)
+const lastSeen = new Map(); // token -> en son ne zaman bağlıydı
+const STARTED = Date.now();
+const touch = (token) => { if (token) { const t = Date.now(); polledAt.set(token, t); lastSeen.set(token, t); } };
+const seen = (token) => { if (token) lastSeen.set(token, Date.now()); };
 function isOnline(token) {
   if (!token) return false;
   for (const c of clients) if (c.token === token) return true;
-  return false;
+  return Date.now() - (polledAt.get(token) || 0) < 7000;
 }
+// Lobide bu kadar süre bağlı olmayan oyuncu kendiliğinden kalkar (telefonu kapatıp gidenler yer tutmasın)
+const AWAY_MS = parseInt(process.env.OKEY_AWAY_MS || '', 10) || 3 * 60 * 1000;
+const isAway = (token) => !isOnline(token) && Date.now() - (lastSeen.get(token) || STARTED) > AWAY_MS;
 const ipOf = (req) => {
   const h = req.headers['cf-connecting-ip'] || String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
   return h || String(req.socket.remoteAddress || '').replace(/^::ffff:/, '');
@@ -369,13 +378,18 @@ async function handleApi(req, res) {
     if (a.type === 'join') {
       const want = Number.isInteger(a.seat) ? a.seat : -1;
       const r = G.join(state, a.name, a.token, isOnline, want);
+      seen(r.token);
       log(`Masaya oturdu: ${state.seats[r.seat].name} (${ipOf(req)})`);
       save();
       broadcast();
       return json(res, 200, { ok: true, token: r.token, seat: r.seat, view: viewFor(r.token) }, req);
     }
+    seen(a.token);
     const seat = G.seatOf(state, a.token);
-    if (seat < 0) return json(res, 200, { ok: false, error: 'Masada değilsin. Adını yazıp otur.', notSeated: true });
+    if (seat < 0) {
+      // Masaya oturmamış biri de bağlantısı kopanı/botu çıkarabilir ya da yerine bot koyabilir (masa dolu kalmasın)
+      if (a.type !== 'kick' && a.type !== 'botSeat') return json(res, 200, { ok: false, error: 'Masada değilsin. Adını yazıp otur.', notSeated: true });
+    }
     G.lobbyAction(state, seat, a, isOnline);
     save();
     broadcast();
@@ -409,6 +423,7 @@ function handleEvents(req, res, url) {
   const bye = () => {
     if (!clients.has(c)) return;
     clients.delete(c);
+    if (token) lastSeen.set(token, Date.now());
     if (!isOnline(token)) {
       if (who) log(`Bağlantısı koptu: ${who} (telefon kendiliğinden yeniden bağlanır)`);
       broadcast();
@@ -429,7 +444,13 @@ const server = http.createServer((req, res) => {
   const p = url.pathname;
   if (req.method === 'POST' && p === '/api') return handleApi(req, res);
   if (req.method === 'GET' && p === '/events') return handleEvents(req, res, url);
-  if (req.method === 'GET' && p === '/state') return json(res, 200, viewFor(url.searchParams.get('token') || ''), req);
+  if (req.method === 'GET' && p === '/state') {
+    const tk = url.searchParams.get('token') || '';
+    const was = isOnline(tk);
+    touch(tk);
+    if (!was && G.seatOf(state, tk) >= 0) broadcast(); // masadakiler onun geldiğini görsün
+    return json(res, 200, viewFor(tk), req);
+  }
   if (req.method === 'GET' && p === '/ping') return json(res, 200, { ok: true, app: '101-okey' });
   if ((req.method === 'GET' || req.method === 'HEAD') && (p === '/' || p === '/index.html')) return servePage(req, res);
   if (req.method === 'GET' && p === '/favicon.ico') return serveStatic(req, res, '/icon.png');
@@ -446,6 +467,7 @@ setInterval(() => {
     const now = Date.now();
     let changed = G.tick(state, now);
     if (B.step(state, now)) changed = true;
+    if (G.dropAway(state, isAway)) changed = true;
     if (changed) {
       save();
       broadcast();

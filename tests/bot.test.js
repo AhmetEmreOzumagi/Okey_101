@@ -48,7 +48,7 @@ test('oyun sürerken gelen biri botun yerine geçer, eli aynen kalır', () => {
   G.lobbyAction(s, 0, { type: 'fillBots' }, off);
   G.lobbyAction(s, 0, { type: 'start' }, off);
   assert.throws(() => G.lobbyAction(s, 0, { type: 'addBot', seat: 1 }, off), /başlamadan/);
-  assert.throws(() => G.join(s, 'Mehmet', null, off, -1), /botun sandalyesine/);
+  assert.throws(() => G.join(s, 'Mehmet', null, off, -1), /yerine geç/);
   const hand = s.round.hands[3].slice();
   const j = G.join(s, 'Mehmet', null, off, 3);
   assert.equal(j.seat, 3);

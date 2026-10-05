@@ -45,7 +45,7 @@ function sse(token, onView) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function main() {
-  const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], { env: Object.assign({}, process.env, { PORT: String(PORT), OKEY_STATE: STATE }), stdio: ['ignore', 'pipe', 'pipe'] });
+  const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], { env: Object.assign({}, process.env, { PORT: String(PORT), OKEY_STATE: STATE, OKEY_AWAY_MS: '3000' }), stdio: ['ignore', 'pipe', 'pipe'] });
   let out = '';
   srv.stdout.on('data', (d) => (out += d));
   srv.stderr.on('data', (d) => (out += d));
@@ -179,13 +179,35 @@ async function main() {
   const back = await post({ type: 'join', name: 'ayşe' });
   if (!back.ok || back.seat !== players[1].seat) throw new Error('Yeniden bağlanma olmadı: ' + JSON.stringify(back));
 
+  // Masa yönetimi: masaya oturmamış biri (Can) botu çıkarabilir, bağlı olanı çıkaramaz;
+  // lobide bağlantısı kopan (Ayşe'nin canlı bağlantısı yok) bir süre sonra kendiliğinden kalkar
+  let j2 = await post({ type: 'reset', token: players[0].token });
+  if (!j2.ok) throw new Error('reset: ' + j2.error);
+  const can = players[2];
+  j2 = await post({ type: 'kick', token: can.token, seat: 3 });
+  if (!j2.ok) throw new Error('Oturmamış biri botu çıkaramadı: ' + j2.error);
+  j2 = await post({ type: 'kick', token: can.token, seat: players[0].seat });
+  if (j2.ok || !/Bağlı/.test(j2.error)) throw new Error('Bağlı oyuncu çıkarılabildi');
+  j2 = await post({ type: 'start', token: can.token });
+  if (j2.ok || !j2.notSeated) throw new Error('Oturmamış biri oyunu başlatabildi');
+  const tAway = Date.now();
+  let dropped = false;
+  while (Date.now() - tAway < 15000) {
+    await sleep(250);
+    const v = players[0].view;
+    if (v && v.phase === 'lobby' && !v.seats[back.seat]) { dropped = true; break; }
+  }
+  if (!dropped) throw new Error('Bağlantısı kopan lobide kendiliğinden kalkmadı');
+  if (!players[0].view.log.some((l) => /uzun süredir bağlı değil/.test(l.text))) throw new Error('Kalkma kayda yazılmadı');
+  const awaySecs = ((Date.now() - tAway) / 1000).toFixed(1);
+
   // Sunucu yeniden başlarsa kayıt
   const saved = JSON.parse(fs.readFileSync(STATE, 'utf8'));
   conns.forEach((c) => c.destroy());
   srv.kill();
   fs.unlinkSync(STATE);
 
-  console.log(`HTTP testi tamam: okey ${okeyRounds} el, ${actions} hamle, ${errors} reddedilen; ${cardResults.join(', ')}; kayıt: ${saved.phase}`);
+  console.log(`HTTP testi tamam: okey ${okeyRounds} el, ${actions} hamle, ${errors} reddedilen; ${cardResults.join(', ')}; bağlantısı kopan ${awaySecs} sn'de kalktı; kayıt: ${saved.phase}`);
   console.log(out.split('\n').filter((l) => l.includes('http://')).slice(0, 2).join('\n'));
 }
 
