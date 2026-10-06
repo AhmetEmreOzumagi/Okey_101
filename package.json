@@ -1,7 +1,7 @@
 {
   "name": "101-okey",
   "version": "1.0.0",
-  "description": "Arkadaşlarla telefondan oynanan 101 Okey, Pişti ve Uno. Bir bilgisayar açar, herkes tarayıcıdan girer; eksik yere bot oturur.",
+  "description": "Arkadaşlarla telefondan oynanan 101 Okey, Pişti ve Renk. Bir bilgisayar açar, herkes tarayıcıdan girer; eksik yere bot oturur.",
   "private": true,
   "main": "baslat.js",
   "repository": {
@@ -9,7 +9,7 @@
     "url": "https://github.com/AhmetEmreOzumagi/Okey_101.git"
   },
   "homepage": "https://github.com/AhmetEmreOzumagi/Okey_101#readme",
-  "keywords": ["okey", "101-okey", "pisti", "uno", "turkish", "card-game", "board-game", "multiplayer", "browser-game"],
+  "keywords": ["okey", "101-okey", "pisti", "renk", "turkish", "card-game", "board-game", "multiplayer", "browser-game"],
   "scripts": {
     "start": "node baslat.js",
     "link": "node baslat.js link",

@@ -34,9 +34,9 @@
   // Avatar içi: bot için robot, kişi için baş harf
   const avatarText = (p) => (p && p.bot ? '🤖' : esc(initial(p && p.name)));
 
-  // Masadaki oyun pişti ya da uno mu (okey dışındaki kart oyunları ayrı ekranda)
+  // Masadaki oyun pişti ya da renk mi (okey dışındaki kart oyunları ayrı ekranda)
   const isCard = (v) => !!(v && v.round && v.round.game && v.round.game !== 'okey');
-  const GAME_TITLE = { okey: '101 Okey', pisti: 'Pişti', uno: 'Uno' };
+  const GAME_TITLE = { okey: '101 Okey', pisti: 'Pişti', uno: 'Renk' };
   function cardCtx() { return { api, toast, esc, modal, closeModal, avatarText, showMenu }; }
 
   // =============== Bağlantı ===============
@@ -536,7 +536,7 @@
     };
     const item = (id, title, sub) => `<button class="gpick${g === id ? ' on' : ''}" data-set="game" data-val="${id}"${can || g === id ? '' : ' disabled'}>` +
       `<span class="gicon ${id}">${icons[id]}</span><span class="gtx"><b>${title}</b><small>${sub}</small></span></button>`;
-    return '<div class="gpicks">' + item('okey', '101 Okey', '4 kişi · taşlarla') + item('pisti', 'Pişti', '2-4 kişi · iskambil') + item('uno', 'Uno', '2-4 kişi · renkli kartlar') + '</div>' +
+    return '<div class="gpicks">' + item('okey', '101 Okey', '4 kişi · taşlarla') + item('pisti', 'Pişti', '2-4 kişi · iskambil') + item('uno', 'Renk', '2-4 kişi · renkli kartlar') + '</div>' +
       (can ? '' : v.phase === 'lobby' ? '<p class="gnote">Oyunu masaya oturan seçer.</p>' : '');
   }
 
@@ -638,7 +638,7 @@
       sh += '<div class="setrow"><span class="lbl">+2 / +4 biriktirme</span>' + seg('unoStack', [['false', 'Kapalı'], ['true', 'Açık']], st.unoStack) +
         '<span class="help">' + (st.unoStack ? '+2 gelince +2 ya da +4, +4 gelince +4 atıp cezayı sıradakine aktarabilirsin.' : '+2 ya da +4 gelen kartları çeker, sırası geçer.') + '</span></div>';
       sh += secsRow;
-      sh += '<p class="help">2, 3 ya da 4 kişi. Elinde 2 kart kalınca "UNO!" demeyi unutma.</p>';
+      sh += '<p class="help">2, 3 ya da 4 kişi. Elinde 2 kart kalınca "SON!" demeyi unutma.</p>';
     }
     sh += '</div>';
     $('#lsettings').innerHTML = sh;

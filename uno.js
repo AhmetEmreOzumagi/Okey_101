@@ -1,5 +1,5 @@
 'use strict';
-/* Uno: 108 kart, 2-4 oyuncu.
+/* Renk (renkli kart oyunu): 108 kart, 2-4 oyuncu.
    Kartlar 0..99 renkli: renk = floor(id/25) (0 kırmızı, 1 sarı, 2 yeşil, 3 mavi), k = id%25:
      k=0 → 0, k=1..18 → 1..9 (ikişer), 19-20 → engel, 21-22 → yön değiştir, 23-24 → +2
    100..103 → renk seç, 104..107 → +4 renk seç */
@@ -152,7 +152,7 @@ function play(s, seat, id, color) {
   pushEvent(r, { type: 'play', seat, card: id, color: c });
   r.moveNo++;
   if (left === 1 && !r.uno[seat]) {
-    // UNO demedi: yakalanırsa 2 kart çeker
+    // SON demedi: yakalanırsa 2 kart çeker
     r.vulnerable = seat;
     const bots = [0, 1, 2, 3].filter((i) => i !== seat && r.active[i] && s.seats[i] && s.seats[i].bot);
     r.catchAt = bots.length && Math.random() < 0.7 ? Date.now() + 1400 + L.randomInt(2200) : 0;
@@ -237,12 +237,12 @@ function pass(s, seat) {
 
 function callUno(s, seat) {
   const r = s.round;
-  if (r.hands[seat].length > 2) fail('UNO, elinde 2 ya da 1 kart kalınca denir.');
+  if (r.hands[seat].length > 2) fail('SON, elinde 2 ya da 1 kart kalınca denir.');
   if (r.uno[seat]) return;
   r.uno[seat] = true;
   if (r.vulnerable === seat) r.vulnerable = -1;
   pushEvent(r, { type: 'uno', seat });
-  L.addLog(s, `${L.nameOf(s, seat)}: UNO!`);
+  L.addLog(s, `${L.nameOf(s, seat)}: SON!`);
 }
 
 function catchUno(s, seat) {
@@ -253,7 +253,7 @@ function catchUno(s, seat) {
   r.catchAt = 0;
   drawCards(r, v, 2);
   pushEvent(r, { type: 'caught', seat: v, by: seat, count: 2 });
-  L.addLog(s, `${L.nameOf(s, seat)} yakaladı! ${L.nameOf(s, v)} UNO demedi, 2 kart çekti.`);
+  L.addLog(s, `${L.nameOf(s, seat)} yakaladı! ${L.nameOf(s, v)} SON demedi, 2 kart çekti.`);
 }
 
 function totals(s) {
@@ -336,7 +336,7 @@ function botAct(s, seat) {
   return play(s, seat, id, info(id).c === -1 ? bestColor(hand, id) : undefined);
 }
 
-// Süre dolması ve botların UNO yakalaması
+// Süre dolması ve botların SON yakalaması
 function tick(s, now) {
   const r = s.round;
   if (s.phase !== 'playing' || !r) return false;

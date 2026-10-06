@@ -1,5 +1,5 @@
 'use strict';
-/* Masa (lobi, koltuklar, ayarlar) ve 101 Okey oyunu. Pişti ve Uno kendi dosyalarında.
+/* Masa (lobi, koltuklar, ayarlar) ve 101 Okey oyunu. Pişti ve Renk kendi dosyalarında (pisti.js, uno.js).
    Sunucu bunu kullanır; testler de doğrudan bunu çağırır. */
 const E = require('./public/engine.js');
 const crypto = require('crypto');
@@ -7,7 +7,7 @@ const { GameError, fail, shuffle, newToken, addLog, nameOf, startClock } = requi
 const P = require('./pisti.js');
 const U = require('./uno.js');
 
-// Kart oyunları: masadaki oyun pişti ya da uno ise hamleler o dosyaya gider
+// Kart oyunları: masadaki oyun pişti ya da renk ise hamleler o dosyaya gider
 const CARD = { pisti: P, uno: U };
 const cardGame = (s) => (s.round && CARD[s.round.game]) || null;
 

@@ -1,5 +1,5 @@
 'use strict';
-/* Bütün oyunların ortak yardımcıları (okey, pişti, uno). */
+/* Bütün oyunların ortak yardımcıları (okey, pişti, renk). */
 const crypto = require('crypto');
 
 class GameError extends Error {}

@@ -1,4 +1,4 @@
-/* Pişti ve Uno masası — telefon arayüzü. app.js çağırır: CardUI.render(view, yardımcılar) */
+/* Pişti ve Renk masası — telefon arayüzü. app.js çağırır: CardUI.render(view, yardımcılar) */
 (function () {
   'use strict';
   const $ = (s, r) => (r || document).querySelector(s);
@@ -9,7 +9,7 @@
   let V = null; // son görünüm
   let roundId = null, seenEv = 0;
   let sel = null; // seçili kart
-  let udisc = []; // uno: yerdeki son kartlar (üstteki dahil)
+  let udisc = []; // renk oyunu: yerdeki son kartlar (üstteki dahil)
   let bound = false;
 
   // =============== Kartlar ===============
@@ -134,7 +134,7 @@
     const r = v.round, esc = C.esc;
     let bd = '';
     if (r.game === 'pisti' && r.pistiCount[seat]) bd += `<span class="pst">${r.pistiCount[seat]} pişti</span>`;
-    if (r.game === 'uno' && r.handCounts[seat] === 1) bd += `<span class="unob">${r.uno[seat] ? 'UNO!' : '1 kart'}</span>`;
+    if (r.game === 'uno' && r.handCounts[seat] === 1) bd += `<span class="unob">${r.uno[seat] ? 'SON!' : '1 kart'}</span>`;
     if (r.team && seat === (v.me + 2) % 4) bd += '<span class="mate">eş</span>';
     if (p.bot) bd += '<span class="bot">bot</span>';
     if (v.completed > 0) bd += `<span class="tot">${v.totals[seat]} puan</span>`;
@@ -222,8 +222,8 @@
       case 'skip': return me(e.seat) ? 'Sıran geçti' : `${nm(e.seat)} sırası geçti`;
       case 'reverse': return 'Yön değişti';
       case 'pass': return vb(e.seat, 'pas geçti', 'pas geçtin');
-      case 'uno': return `${nm(e.seat)}: UNO!`;
-      case 'caught': return me(e.seat) ? 'UNO demedin, 2 kart ceza' : `${nm(e.seat)} UNO demedi, 2 kart ceza`;
+      case 'uno': return `${nm(e.seat)}: SON!`;
+      case 'caught': return me(e.seat) ? 'SON demedin, 2 kart ceza' : `${nm(e.seat)} SON demedi, 2 kart ceza`;
       case 'reshuffle': return 'Yerdeki kartlar karıştırılıp desteye kondu';
     }
     return '';
@@ -254,8 +254,8 @@
       const mine = myTurn();
       if (mine && !r.drew) h += `<button class="btn primary" data-cg="draw">${r.pending ? r.pending + ' kart çek' : 'Kart çek'}</button>`;
       if (mine && r.drew) h += '<button class="btn primary" data-cg="pass">Pas</button>';
-      if (r.hand.length <= 2 && r.hand.length > 0 && !r.uno[me]) h += `<button class="btn unobtn${r.hand.length === 2 && mine ? ' hot' : ''}" data-cg="uno">UNO!</button>`;
-      if (r.vulnerable >= 0 && r.vulnerable !== me) h += `<button class="btn catchbtn" data-cg="catch">Yakala! <small>${C.esc(v.seats[r.vulnerable] ? v.seats[r.vulnerable].name : '')} UNO demedi</small></button>`;
+      if (r.hand.length <= 2 && r.hand.length > 0 && !r.uno[me]) h += `<button class="btn unobtn${r.hand.length === 2 && mine ? ' hot' : ''}" data-cg="uno">SON!</button>`;
+      if (r.vulnerable >= 0 && r.vulnerable !== me) h += `<button class="btn catchbtn" data-cg="catch">Yakala! <small>${C.esc(v.seats[r.vulnerable] ? v.seats[r.vulnerable].name : '')} SON demedi</small></button>`;
     }
     if (v.completed > 0) h += `<div class="myscore"><small>Puanın</small><b>${v.totals[me]}</b>${r.team ? `<small>Takım ${v.teamTotals[me % 2]}</small>` : ''}</div>`;
     return h;
@@ -514,7 +514,7 @@
   }
 
   function celebrate(g, t) {
-    // Uno: eli bitiren kutlanır
+    // Renk: eli bitiren kutlanır
     const res = V.round.result;
     if (g === 'uno' && V.phase === 'roundEnd' && res && res.winner >= 0) {
       if (res.winner === V.me) {
@@ -601,7 +601,7 @@
       floatText('⇄ Yön değişti', rectOf($('#cgc')), t + 150, 'small');
       return t + 200;
     }
-    if (ev.type === 'uno') { bubble(ev.seat, 'UNO!', t, 'uno'); return t + 150; }
+    if (ev.type === 'uno') { bubble(ev.seat, 'SON!', t, 'uno'); return t + 150; }
     if (ev.type === 'caught') { bubble(ev.seat, 'Yakalandı! +2', t, 'bad'); return t + 200; }
     if (ev.type === 'pass') { bubble(ev.seat, 'Pas', t, 'small'); return t + 100; }
     if (ev.type === 'reshuffle') { floatText('Deste karıştırıldı', rectOf($('#cgdeck')), t, 'small'); return t; }
@@ -811,13 +811,13 @@
         `<li>${st.pistiTarget || 101} puana ilk ulaşan (eşlide takım) kazanır.${st.mode === 'team' ? ' Karşılıklı oturanlar eştir.' : ''}</li>` +
         '<li>Kartı oynamak için iki kez dokun ya da masaya sürükle.</li></ul>';
     }
-    return '<h2>Uno kuralları</h2><ul class="rules">' +
+    return '<h2>Renk kuralları</h2><ul class="rules">' +
       '<li>Herkese 7 kart dağıtılır. Sıranda yerdeki kartla aynı renkte, aynı sayıda ya da aynı işarette bir kart atarsın.</li>' +
       '<li>Atacak kartın yoksa desteden bir kart çekersin; çektiğin kart uyuyorsa hemen atabilir ya da pas geçebilirsin.</li>' +
       '<li>⊘ Pas: sıradaki oyuncu atlanır. ⇄ Yön: oyunun yönü değişir (iki kişide pas gibi). +2: sıradaki 2 kart çeker ve atlanır.</li>' +
       '<li>Renk kartı (çark): istediğin rengi seçersin. +4: rengi seçersin, sıradaki 4 kart çeker ve atlanır.</li>' +
       (st.unoStack ? '<li>Biriktirme açık: +2 gelince +2 ya da +4, +4 gelince +4 atarak cezayı sıradakine aktarabilirsin.</li>' : '') +
-      '<li>Elinde 2 kart kalınca "UNO!" düğmesine bas. Demeden 1 karta inersen biri "Yakala!" derse 2 kart çekersin.</li>' +
+      '<li>Elinde 2 kart kalınca "SON!" düğmesine bas. Demeden 1 karta inersen biri "Yakala!" derse 2 kart çekersin.</li>' +
       '<li>Elini ilk bitiren, rakiplerin elindeki kartların puanını alır: sayılar kendi değeri, Pas/Yön/+2 20, Renk kartı ve +4 50 puan.</li>' +
       `<li>${st.unoTarget || 200} puana ilk ulaşan kazanır.</li></ul>`;
   }

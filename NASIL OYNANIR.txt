@@ -1,8 +1,8 @@
-101 OKEY · PİŞTİ · UNO — NASIL OYNANIR
-======================================
+101 OKEY · PİŞTİ · RENK — NASIL OYNANIR
+=======================================
 
 Üç oyun var: 101 Okey (4 kişi, taşlarla), Pişti (2-4 kişi, iskambil) ve
-Uno (2-4 kişi, renkli kartlar). Hangisini oynayacağınızı masaya oturduktan
+Renk (2-4 kişi, renkli kartlar). Hangisini oynayacağınızı masaya oturduktan
 sonra ekranın üstündeki üç düğmeden seçersiniz. Eksik kişi yerine bot oturur.
 
 GEREKEN (sadece oyunu açan bilgisayarda, bir kez)
@@ -41,11 +41,11 @@ AYNI WI-FI'DAN (internetsiz)
 
 SONRA
 Herkes adını yazıp masadaki boş bir sandalyeye dokunsun. Üstten oyunu seçin:
-"101 Okey", "Pişti" ya da "Uno". Altta o oyunun ayarları çıkar:
+"101 Okey", "Pişti" ya da "Renk". Altta o oyunun ayarları çıkar:
   Okey:  Eşli/Eşsiz, Katlamalı, hamle süresi, el sayısı (4 kişi gerekir)
   Pişti: Eşli/Eşsiz (eşli için 4 kişi), hedef puan (51/101/151), hamle süresi
-  Uno:   hedef puan (100/200/300/500), +2/+4 biriktirme, hamle süresi
-Sonra "Oyunu başlat". Pişti ve Uno 2 kişiyle de başlar.
+  Renk:  hedef puan (100/200/300/500), +2/+4 biriktirme, hamle süresi
+Sonra "Oyunu başlat". Pişti ve Renk 2 kişiyle de başlar.
 
 EKSİK VARSA: BOTLAR
 Masada boş yer varsa "Boş yerlere bot oturt"a basın (ya da boş sandalyenin
@@ -54,7 +54,7 @@ altındaki "bot koy"a dokunun). Botlar kendi sırasında kendiliğinden oynar:
 altındaki "çıkar"a dokunun.
 Oyun sürerken bir arkadaş gelirse: linke girip adını yazsın ve bir botun
 sandalyesine dokunsun ("yerine geç"). Botun taşlarıyla (kartlarıyla) devam eder.
-Pişti ve Uno'da da botlar aynı şekilde oturur ve oynar.
+Pişti ve Renk'te de botlar aynı şekilde oturur ve oynar.
 
 İLK SEFERDE ÇIKABİLECEK SORULAR
 - Windows "Windows bilgisayarınızı korudu" derse: "Ek bilgi" > "Yine de çalıştır".
@@ -102,15 +102,15 @@ OYUN İÇİNDE
 - Her hamle için süre vardır (varsayılan 30 sn). Süre dolarsa taş
   otomatik çekilip atılır.
 
-PİŞTİ VE UNO'DA
+PİŞTİ VE RENK'TE
 - Telefon yan da dik de tutulabilir. Kartlarınız altta, rakipler masanın
   etrafında oturur: sağınızdaki sizden sonra oynar.
 - Kart atmak: karta iki kez dokunun; ya da bir kez dokunup ortadaki kartlara
   dokunun; ya da kartı yukarı, masaya sürükleyin.
-- Uno'da atacak kartınız yoksa desteye ya da "Kart çek"e dokunun. Çektiğiniz
+- Renk'te atacak kartınız yoksa desteye ya da "Kart çek"e dokunun. Çektiğiniz
   kart uyuyorsa atabilir ya da "Pas" diyebilirsiniz. Renk kartı ve +4 atınca
   renk seçme penceresi açılır.
-- Uno'da 2 kartınız kalınca "UNO!" düğmesine basın. Biri demeyi unutursa
+- Renk'te 2 kartınız kalınca "SON!" düğmesine basın. Biri demeyi unutursa
   ekranda "Yakala!" düğmesi çıkar; basan olursa o kişi 2 kart çeker.
 - El bitince sonuç tablosu gelir; menüdeki (☰) "Puan tablosu" el el puanları
   gösterir. "Kısa kurallar" o oyunun kurallarını açar.
@@ -191,8 +191,8 @@ PİŞTİ KURALLARI (özet)
 - Hedef puana ilk ulaşan kazanır (aynı elde birden çok kişi geçerse en yüksek
   puanlı; eşitse bir el daha oynanır).
 
-UNO KURALLARI (özet)
-- 108 kartlık Uno destesi, 2-4 kişi, herkese 7 kart.
+RENK KURALLARI (özet)
+- 108 kartlık renkli kart destesi, 2-4 kişi, herkese 7 kart.
 - Yerdeki kartla aynı renkte, aynı sayıda ya da aynı işarette kart atılır.
   Renk kartı ve +4 her zaman atılır; atan rengi seçer.
 - Atacak kart yoksa desteden 1 kart çekilir; uyuyorsa hemen atılabilir.
@@ -200,7 +200,7 @@ UNO KURALLARI (özet)
   +2: sıradaki 2 kart çeker, sırası geçer. +4: sıradaki 4 kart çeker, sırası geçer.
 - Biriktirme açıksa +2 gelen +2 ya da +4 atıp cezayı sıradakine aktarabilir;
   +4 üstüne +4 atılır. Karşılık veremeyen hepsini çeker.
-- 2 kartı kalan UNO! der. Demeden 1 karta inen, sıradaki oynamadan önce
+- 2 kartı kalan SON! der. Demeden 1 karta inen, sıradaki oynamadan önce
   yakalanırsa 2 kart çeker. Botlar da yakalar.
 - Elini ilk bitiren, rakiplerin elinde kalan kartların puanını alır: sayılar
   kendi değeri, Pas/Yön/+2 20, renk kartı ve +4 50 puan. Hedef puana ilk

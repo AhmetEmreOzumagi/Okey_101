@@ -173,7 +173,7 @@ function playStep(s, seat) {
 }
 
 // Sıradaki bot hamlesini yapar. Bir şey değiştiyse true döner.
-// Pişti ve Uno botları: sırası gelen bot biraz bekleyip tek hamle yapar
+// Pişti ve Renk botları: sırası gelen bot biraz bekleyip tek hamle yapar
 const CARD_DELAY = { pisti: [900, 1500], uno: [1000, 1700] };
 function cardStep(s, now, M) {
   const r = s.round;
@@ -185,7 +185,7 @@ function cardStep(s, now, M) {
   }
   const key = `${r.moveNo}:${seat}:${r.drew ? 1 : 0}:${r.pending || 0}`;
   if (!r.botAt || r.botKey !== key) {
-    // Biri UNO demeyi unuttuysa yakalamak için insanlara biraz zaman tanı
+    // Biri SON demeyi unuttuysa yakalamak için insanlara biraz zaman tanı
     const extra = r.vulnerable >= 0 ? 900 : 0;
     r.botAt = now + rand(CARD_DELAY[r.game]) + extra;
     r.botKey = key;
@@ -197,7 +197,7 @@ function cardStep(s, now, M) {
     M.botAct(s, seat);
   } catch (e) {
     console.error('  (bot hatası)', e && e.message);
-    // takılmasın: uno'da kart çek / pas, piştide ilk kartı at
+    // takılmasın: renk oyununda kart çek / pas, piştide ilk kartı at
     try {
       if (r.game === 'uno') G.act(s, seat, { type: r.drew ? 'pass' : 'draw' });
       else G.act(s, seat, { type: 'play', card: r.hands[seat][0] });

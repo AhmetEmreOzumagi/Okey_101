@@ -125,7 +125,7 @@ async function main() {
   if (players[0].view.phase !== 'gameEnd') throw new Error('Okey oyunu bitmedi');
   const okeyRounds = rounds;
 
-  // Pişti ve Uno: aynı masada yeni oyun, 2 insan + 2 bot, birer el HTTP üzerinden
+  // Pişti ve Renk: aynı masada yeni oyun, 2 insan + 2 bot, birer el HTTP üzerinden
   const cardResults = [];
   for (const game of ['pisti', 'uno']) {
     let j = await post({ type: 'reset', token: players[0].token });

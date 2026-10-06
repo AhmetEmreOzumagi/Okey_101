@@ -1,5 +1,5 @@
 'use strict';
-/* Uno: deste, oynanabilirlik, engel / yön / +2 / +4, biriktirme, çekilen kart, UNO deme ve yakalama, puanlama, botlarla tam oyun */
+/* Renk (uno.js): deste, oynanabilirlik, engel / yön / +2 / +4, biriktirme, çekilen kart, SON deme ve yakalama, puanlama, botlarla tam oyun */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const G = require('../game.js');
@@ -212,7 +212,7 @@ test('deste bitince yerdekiler (üstteki hariç) karıştırılıp deste olur', 
   assert.ok(r.events.some((e) => e.type === 'reshuffle'));
 });
 
-test('UNO: demeden 1 karta inen yakalanırsa 2 kart çeker; deyince yakalanamaz', () => {
+test('SON: demeden 1 karta inen yakalanırsa 2 kart çeker; deyince yakalanamaz', () => {
   const s = mk(3);
   const r = setup(s, { top: num(0, 5), turn: 0, hands: [[num(0, 1), num(0, 2)], [num(1, 2), num(1, 3)], [num(1, 4), num(1, 5)]] });
   G.act(s, 0, { type: 'play', card: num(0, 1) });
@@ -233,7 +233,7 @@ test('UNO: demeden 1 karta inen yakalanırsa 2 kart çeker; deyince yakalanamaz'
   assert.throws(() => G.act(s2, 1, { type: 'catch' }), /kimse yok/);
 });
 
-test('UNO yakalama fırsatı bir sonraki hamleyle kaçar; bot yakalayabilir', () => {
+test('SON yakalama fırsatı bir sonraki hamleyle kaçar; bot yakalayabilir', () => {
   const s = mk(3);
   const r = setup(s, { top: num(0, 5), turn: 0, hands: [[num(0, 1), num(0, 2)], [num(0, 3), num(1, 3), num(1, 6)], [num(1, 4), num(1, 5)]] });
   G.act(s, 0, { type: 'play', card: num(0, 1) });
