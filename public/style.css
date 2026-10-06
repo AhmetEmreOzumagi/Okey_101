@@ -199,12 +199,59 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .lav.bot { font-size: 30px; }
 .av.bot { font-size: calc(var(--s) * .5); }
 .tcenter .botfill { margin-top: 4px; font-size: 13px; color: var(--brass); }
-/* Yatay küçük telefonlar: masa biraz büyüsün, ortadaki etiketler (ayarlarda zaten var) gizlensin */
-@media (max-height: 450px) {
-  .ltable { width: min(calc(100% - 96px), max(calc(60vh * 1.25), 330px)); }
+/* Yatay telefon (kısa ekran): sayfa kaymasın. Üstte tek satırda başlık + oyun seçimi + ad kutusu sabit,
+   altta solda kalan yüksekliğe ölçeklenen masa, sağda kendi içinde kayan ayarlar ve bağlanma kartı. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .lwrap {
+    height: 100%; max-width: none;
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "head games name" "main main main";
+    gap: 6px 10px;
+    padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  }
+  .lhead { grid-area: head; margin: 0; gap: 8px; }
+  .lhead p { display: none; }
+  .lhead h1 { font-size: 19px; white-space: nowrap; }
+  .lmark .mt { width: 24px; height: 32px; font-size: 13px; border-radius: 4px; }
+  .lmark .mt.c2 { margin-left: -6px; }
+  /* (#lgames ile yazılıyor ki aşağıdaki dar ekran kuralları bunları ezmesin) */
+  #lgames { grid-area: games; margin: 0; min-width: 0; }
+  #lgames .gpicks { gap: 6px; }
+  #lgames .gpick { flex-direction: row; text-align: left; gap: 8px; padding: 4px 8px; border-radius: 10px; }
+  #lgames .gicon { height: 30px; }
+  #lgames .gicon .pc, #lgames .gicon .uc { --w: 20px; }
+  #lgames .gicon .gt { width: 14px; height: 20px; font-size: 11px; }
+  #lgames .gtx b { font-size: 13px; }
+  #lgames .gtx small, #lgames .gnote { display: none; }
+  .namebar { grid-area: name; margin: 0; padding: 4px 6px; gap: 6px; flex-wrap: nowrap; border-radius: 10px; }
+  .namebar label { font-size: 13px; }
+  .namebar input { flex: 0 1 150px; width: 150px; font-size: 15px; padding: 6px 8px; }
+  .namebar .nhint { display: none; }
+  .lmain { grid-area: main; min-height: 0; grid-template-columns: minmax(0, 1fr) minmax(260px, 320px); gap: 10px; align-items: stretch; }
+  #ltable { min-height: 0; display: flex; align-items: center; justify-content: center; container-type: size; }
+  /* Sandalyeler biraz küçülür ki kısa ekranda masanın içi boş kalsın */
+  .lseat { width: 110px; gap: 2px; }
+  .lav { width: 50px; height: 50px; font-size: 22px; }
+  .lav.empty, .lav.bot { font-size: 24px; }
+  .lav .off { width: 12px; height: 12px; }
+  .lname { font-size: 13px; max-width: 110px; }
+  .lsub { font-size: 11px; }
+  .tcenter .count { font-size: 13px; }
+  .tcenter .btn { padding: 8px 14px; font-size: 14px; }
+  /* Masa, kalan yüksekliğe sığacak kadar: üst/alt sandalyeler için 44 + 48 px, yanlardakiler için 55 + 55 px pay.
+     Eski tarayıcılar için ekran yüksekliğinden (başlık satırı ~64 px), yenilerde kutunun kendi ölçüsünden (cq). */
+  .ltable { margin: 44px auto 48px; width: min(calc(100% - 110px), calc((100vh - 156px) * 1.25)); width: min(calc(100cqw - 110px), calc((100cqh - 92px) * 1.25)); }
+  .lside { min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding-right: 2px; }
+  #ljoin { margin-top: 10px; }
   .tcenter { gap: 5px; }
   .tcenter .tags { display: none; }
   .tcenter .botfill { font-size: 12px; margin-top: 0; }
+}
+/* Yatay küçük telefon: başlık yazısına yer yok, seçili oyun zaten üstte işaretli */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 720px) {
+  .lhead h1 { display: none; }
+  .lmain { grid-template-columns: minmax(0, 1fr) minmax(250px, 280px); }
+  .seg button { font-size: 12.5px; padding: 8px 2px; white-space: nowrap; }
 }
 
 .lseat.ta .lav:not(.empty) { box-shadow: 0 0 0 4px var(--team-a), 0 6px 14px rgba(0, 0, 0, .4); }
