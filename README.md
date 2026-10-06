@@ -8,7 +8,7 @@ Arkadaşlarla telefondan oynanan masa oyunları: **101 Okey**, **Pişti** ve **R
 
 | Pişti | Renk |
 | --- | --- |
-| ![Pişti](docs/pisti.jpg) | ![Renk](docs/uno.jpg) |
+| ![Pişti](docs/pisti.jpg) | ![Renk](docs/renk.jpg) |
 
 ## Özellikler
 
