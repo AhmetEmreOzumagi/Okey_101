@@ -1,6 +1,8 @@
 # 101 Okey · Pişti · Renk
 
-Arkadaşlarla telefondan oynanan masa oyunları: **101 Okey**, **Pişti** ve **Renk**. Hangi oyunun oynanacağı ana menüden (lobi) seçilir. Oyunu bir bilgisayar açar (Mac, Windows ya da Linux), herkes telefonundan ya da tabletinden **tarayıcıyla** girer. Telefonlara uygulama kurulmaz; Android, iPhone, tablet ve bilgisayar aynı masada oynar.
+Arkadaşlarla telefondan oynanan masa oyunları: **101 Okey**, **Pişti** ve **Renk**. Hangi oyunun oynanacağı ana menüden (lobi) seçilir. Masayı bir bilgisayar (Mac, Windows ya da Linux) **ya da Android telefon** açar; herkes telefonundan ya da tabletinden **tarayıcıyla** girer. Android, iPhone, tablet ve bilgisayar aynı masada oynar.
+
+**Android uygulaması** ile bilgisayara gerek kalmaz: bir telefon **Masa kur** der, diğer Android'ler **Arkadaşına bağlan** ile listeden masayı seçer, iPhone'lular QR kodu okutup tarayıcıdan girer. Ayrıntı: [Android uygulaması](#android-uygulaması).
 
 ![101 Okey](docs/oyun.jpg)
 
@@ -22,6 +24,15 @@ Arkadaşlarla telefondan oynanan masa oyunları: **101 Okey**, **Pişti** ve **R
 - **Masa dolu kalmaz:** sayfayı kapatıp giden birinin yeri, masaya oturmadan da **çıkar** ile boşaltılır; lobide 3 dakika bağlı olmayan kendiliğinden kalkar. Oyun sürerken bağlantısı kopanın yerine **bot koy**ulur ya da yeni gelen **yerine geç**er.
 - **Kurallar oyunda kontrol edilir:** açış puanı, işleme, okey ve ceza puanları, el sonu hesabı.
 - **Kurulum derdi yok:** sadece Node.js gerekir; `npm install` yok, ek paket yok.
+
+## Android uygulaması
+
+Google Play'de **101 Okey · Pişti** (paket adı `io.github.ahmetemreozumagi.okey101`) ya da [android/README.md](android/README.md) içinde anlatıldığı gibi APK olarak kurulur. İnternet gerekmez; herkes aynı Wi-Fi'da ya da birinin hotspot'unda olmalı.
+
+- **Masa kur:** oyun bu telefonda çalışır, kuran da aynı telefondan oynar. Lobide arkadaşlar için adres ve QR kod görünür; iPhone'lular ve bilgisayarlar tarayıcıdan bu adrese girer.
+- **Arkadaşına bağlan:** aynı ağda masa açmış telefonlar listelenir, dokununca bağlanılır. Liste boş kalırsa uygulama ağı tarar; adres elle de yazılabilir.
+- Masa açıkken ekran kapanmaz. Masayı kuran uygulamadan çıkarsa masa kapanır (önce uyarır); oyun kaydedilir, tekrar "Masa kur" deyince kaldığı yerden devam eder.
+- Oyun kuralları ve arayüz web sürümüyle birebir aynıdır: uygulama bu depodaki JS dosyalarını paketler (`android/` klasörü).
 
 ## Gereken
 
@@ -165,10 +176,12 @@ Daha ayrıntılı Türkçe kılavuz: [NASIL OYNANIR.txt](NASIL%20OYNANIR.txt)
 | `bot.js` | Boş koltuklar için bilgisayar oyuncusu (okey) ve kart oyunlarında botların zamanlaması |
 | `public/engine.js` | Taş, seri/grup/çift kontrolü ve ıstaka dizme (sunucu ve telefon ortak kullanır) |
 | `public/` | Telefonlarda açılan tek sayfalık arayüz (`app.js`, `cards.js` pişti/renk masası, `style.css`, `qr.js`) |
-| `tests/` | Okey, pişti ve renk kural testleri, botlarla tam oyunlar, 200 oyunluk simülasyon ve HTTP testi |
+| `tests/` | Okey, pişti ve renk kural testleri, botlarla tam oyunlar, 200 oyunluk simülasyon, HTTP testi ve Android çekirdeği testi |
+| `android/` | Android uygulaması (Kotlin): telefonda HTTP sunucusu + gizli WebView'de çalışan aynı JS; ayrıntı [android/README.md](android/README.md) |
+| `docs/` | Ekran görüntüleri, gizlilik politikası (GitHub Pages) ve Play mağaza metinleri (`docs/magaza/`) |
 
 ```
 npm test
 ```
 
-Sadece Node'un kendi modülleri kullanılır. Oyun sırasında oluşan `oyun-kaydi.json`, `internet-linki.txt` ve `bin/` depoya girmez (`.gitignore`).
+Sadece Node'un kendi modülleri kullanılır. Oyun sırasında oluşan `oyun-kaydi.json`, `internet-linki.txt` ve `bin/` depoya girmez (`.gitignore`). Android derlemesi için `cd android && ./derle.sh` (bkz. [android/README.md](android/README.md)).

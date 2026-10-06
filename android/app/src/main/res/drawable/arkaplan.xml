@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ana ekranın çuha arka planı -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:type="radial" android:gradientRadius="120%p" android:centerX="0.5" android:centerY="0.35"
+        android:startColor="@color/cuha_acik" android:centerColor="@color/cuha" android:endColor="@color/cuha_koyu" />
+</shape>

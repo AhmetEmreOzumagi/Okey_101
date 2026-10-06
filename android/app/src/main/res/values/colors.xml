@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Web arayüzündeki (public/style.css) çuha ve taş renkleriyle aynı -->
+<resources>
+    <color name="cuha">#1A5E40</color>
+    <color name="cuha_koyu">#0F3B28</color>
+    <color name="cuha_acik">#25784F</color>
+    <color name="fildisi">#F8F2DF</color>
+    <color name="fildisi_golge">#E6D9B5</color>
+    <color name="pirinc">#E3B04B</color>
+    <color name="pirinc_koyu">#A87A1E</color>
+    <color name="murekkep">#1D1A14</color>
+    <color name="tas_kirmizi">#C8102E</color>
+    <color name="tas_mavi">#1356AD</color>
+    <color name="tehlike">#E05252</color>
+    <color name="cam">#5704160E</color>
+    <color name="yazi_soluk">#B8D8C6</color>
+    <color name="ic_launcher_background">#1A5E40</color>
+</resources>

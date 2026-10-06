@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dış kütüphane kullanılmadığı için sistemin Material teması; renkler çuha yeşili ve pirinç -->
+    <style name="Tema" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/cuha_koyu</item>
+        <item name="android:colorPrimary">@color/cuha</item>
+        <item name="android:colorPrimaryDark">@color/cuha_koyu</item>
+        <item name="android:colorAccent">@color/pirinc</item>
+        <item name="android:textColorPrimary">@color/fildisi</item>
+        <item name="android:textColorSecondary">@color/yazi_soluk</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:colorEdgeEffect">@color/pirinc</item>
+    </style>
+
+    <!-- Uyarı pencereleri de koyu yeşil olsun -->
+    <style name="Pencere" parent="android:Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">@color/pirinc</item>
+        <item name="android:colorBackground">@color/cuha</item>
+        <item name="android:textColorPrimary">@color/fildisi</item>
+        <item name="android:textColorSecondary">@color/yazi_soluk</item>
+    </style>
+</resources>

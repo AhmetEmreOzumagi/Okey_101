@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="uygulama_adi">101 Okey · Pişti</string>
+    <string name="alt_baslik">Arkadaşlarla aynı Wi-Fi\'da ya da birinin hotspot\'unda, internetsiz. Eksik yere bot oturur.</string>
+    <string name="masa_kur">Masa kur</string>
+    <string name="masa_kur_aciklama">Oyun bu telefonda çalışır, sen de buradan oynarsın. Arkadaşların adres ya da QR ile girer; iPhone\'lular tarayıcıdan bağlanır.</string>
+    <string name="masaya_don">Masaya dön</string>
+    <string name="masa_acik">Masa açık, arkadaşların bağlı kalsın diye uygulama kapanmasın</string>
+    <string name="masayi_kapat">Masayı kapat</string>
+    <string name="arkadasina_baglan">Arkadaşına bağlan</string>
+    <string name="arkadasina_baglan_aciklama">Aynı ağda masa açmış telefonlar burada listelenir; dokununca bağlanırsın.</string>
+    <string name="masa_kuruluyor">Masa kuruluyor…</string>
+    <string name="masa_kurulamadi">Masa kurulamadı: %1$s</string>
+    <string name="agdaki_masalar">Aynı ağdaki masalar</string>
+    <string name="araniyor">Masa aranıyor…</string>
+    <string name="masa_bulunamadi">Henüz masa bulunamadı. Arkadaşın \"Masa kur\" demiş olmalı ve ikiniz aynı Wi-Fi\'da (ya da onun hotspot\'unda) olmalısınız.</string>
+    <string name="agi_tara">Ağı tara</string>
+    <string name="ag_taraniyor">Ağ taranıyor… %1$d / %2$d</string>
+    <string name="tarama_bitti">Tarama bitti.</string>
+    <string name="adres_elle">Adresi elle yaz</string>
+    <string name="adres_ipucu">örn. 192.168.1.34 ya da 192.168.1.34:8101</string>
+    <string name="baglan">Bağlan</string>
+    <string name="adres_gecersiz">Adres anlaşılamadı. Örnek: 192.168.1.34</string>
+    <string name="masa_cevap_vermedi">%1$s adresinde masa bulunamadı. Adres doğru mu, telefon aynı ağda mı?</string>
+    <string name="geri">Geri</string>
+    <string name="masa_kapanacak_baslik">Masa kapanacak</string>
+    <string name="masa_kapanacak">Oyun bu telefonda çalışıyor. Çıkarsan masa kapanır, arkadaşlarının bağlantısı kesilir. Oyun kaydedilir; tekrar \"Masa kur\" deyince kaldığı yerden devam eder.</string>
+    <string name="vazgec">Vazgeç</string>
+    <string name="kapat_ve_cik">Masayı kapat</string>
+    <string name="baglanti_koptu_baslik">Masaya ulaşılamıyor</string>
+    <string name="baglanti_koptu">%1$s cevap vermiyor. Masa kuran telefon uygulamayı kapatmış ya da ağ değişmiş olabilir.</string>
+    <string name="tekrar_dene">Tekrar dene</string>
+    <string name="ana_ekran">Ana ekran</string>
+    <string name="surum">Sürüm %1$s</string>
+    <string name="gizlilik">Uygulama hiç veri toplamaz, internete çıkmaz.</string>
+    <string name="masa_varsayilan_ad">101 Okey masası</string>
+    <string name="kaynak">Kaynak kodu ve kılavuz: github.com/AhmetEmreOzumagi/Okey_101</string>
+</resources>

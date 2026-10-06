@@ -1,0 +1,15 @@
+# Derleme çıktıları ve makineye özel dosyalar
+build/
+.gradle/
+.kotlin/
+local.properties
+.idea/
+*.iml
+.DS_Store
+*.apk
+*.aab
+*.jks
+*.keystore
+captures/
+.externalNativeBuild/
+.cxx/

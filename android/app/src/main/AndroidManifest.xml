@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Yerel ağda HTTP sunucusu ve istemci -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- Masa ararken (NSD/mDNS) çok noktaya yayın paketleri alınabilsin -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <!-- Oyun içinde titreşim (sıra sende, pişti) -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!--
+      NOT (ileride): targetSdk 37'ye (Android 17) geçerken yerel ağ erişimi için şu izin eklenmeli
+      ve "Masa kur" / "Arkadaşına bağlan" düğmelerine basılınca çalışma zamanında istenmeli:
+        <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+      Şimdilik (targetSdk 36) gerekmiyor; Android 17'de de target 36 kaldığı sürece istenmiyor.
+    -->
+
+    <!-- Kamera, konum vb. donanım gerekmez; tablet ve Chromebook'ta da kurulabilsin -->
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
+
+    <application
+        android:label="@string/uygulama_adi"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/Tema"
+        android:allowBackup="false"
+        android:supportsRtl="false"
+        android:hardwareAccelerated="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:enableOnBackInvokedCallback="true"
+        tools:targetApi="33">
+
+        <!-- Ana ekran: Masa kur / Arkadaşına bağlan -->
+        <activity
+            android:name=".AnaEkran"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density|locale|layoutDirection">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Oyun ekranı: public/ arayüzünü gösteren WebView. Ekran dönünce yeniden yaratılmaz (oyun sıfırlanmasın). -->
+        <activity
+            android:name=".MasaEkrani"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density|locale|layoutDirection" />
+    </application>
+</manifest>
