@@ -27,7 +27,7 @@ Arkadaşlarla telefondan oynanan masa oyunları: **101 Okey**, **Pişti** ve **R
 
 ## Android uygulaması
 
-Google Play'de **101 Okey · Pişti** (paket adı `io.github.ahmetemreozumagi.okey101`) ya da [android/README.md](android/README.md) içinde anlatıldığı gibi APK olarak kurulur. İnternet gerekmez; herkes aynı Wi-Fi'da ya da birinin hotspot'unda olmalı.
+Google Play'de **101 Okey · Pişti** (paket adı `ahmetemreozumagi.okeypisti`) ya da [android/README.md](android/README.md) içinde anlatıldığı gibi APK olarak kurulur. İnternet gerekmez; herkes aynı Wi-Fi'da ya da birinin hotspot'unda olmalı.
 
 - **Masa kur:** oyun bu telefonda çalışır, kuran da aynı telefondan oynar. Lobide arkadaşlar için adres ve QR kod görünür; iPhone'lular ve bilgisayarlar tarayıcıdan bu adrese girer.
 - **Arkadaşına bağlan:** aynı ağda masa açmış telefonlar listelenir, dokununca bağlanılır. Liste boş kalırsa uygulama ağı tarar; adres elle de yazılabilir.

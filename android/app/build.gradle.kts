@@ -18,7 +18,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.github.ahmetemreozumagi.okey101"
+        applicationId = "ahmetemreozumagi.okeypisti"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
