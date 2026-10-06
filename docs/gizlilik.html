@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>101 Okey · Pişti — Gizlilik Politikası / Privacy Policy</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 760px; margin: 0 auto; padding: 24px 18px 48px; line-height: 1.55; color: #1d1a14; background: #f8f2df; }
+  @media (prefers-color-scheme: dark) { body { color: #f8f2df; background: #0f3b28; } a { color: #e3b04b; } }
+  h1 { font-size: 1.7em; margin-bottom: .2em; }
+  h2 { font-size: 1.25em; margin-top: 1.6em; border-bottom: 1px solid rgba(128,128,128,.4); padding-bottom: .2em; }
+  .tarih { opacity: .75; font-size: .95em; }
+  hr { margin: 40px 0; border: 0; border-top: 2px solid rgba(128,128,128,.4); }
+</style>
+</head>
+<body>
+<h1>101 Okey · Pişti — Gizlilik Politikası</h1>
+<p class="tarih">Son güncelleme: 6 Ekim 2026 · Uygulama: <code>io.github.ahmetemreozumagi.okey101</code> · Geliştirici: Ahmet Emre Özümağı</p>
+
+<h2>Kısaca</h2>
+<p><strong>Uygulama hiçbir kişisel veri toplamaz, saklamaz, paylaşmaz ve internete göndermez.</strong> Reklam, analitik, çökme raporu ve hesap sistemi yoktur. İnternet bağlantısı gerekmez; oyun yalnızca aynı yerel ağdaki (Wi-Fi ya da hotspot) telefonlar arasında oynanır.</p>
+
+<h2>Hangi bilgiler cihazda tutulur?</h2>
+<ul>
+  <li><strong>Oyuncu adı:</strong> Masaya otururken yazdığınız takma ad, aynı masadaki diğer oyunculara gösterilir ve telefonunuzda (uygulamanın kendi deposunda) saklanır. Gerçek adınızı yazmak zorunda değilsiniz.</li>
+  <li><strong>Oyun kaydı:</strong> Masayı kuran telefonda oyunun durumu (taşlar, puanlar, masadaki adlar) <code>oyun-kaydi.json</code> dosyasında saklanır ki uygulama kapanıp açılınca oyun kaldığı yerden devam edebilsin. Bu dosya yalnızca o telefonda durur; uygulama silinince silinir.</li>
+  <li><strong>Oturum anahtarı:</strong> Telefonunuzun masaya "aynı oyuncu" olarak yeniden bağlanabilmesi için rastgele bir anahtar tarayıcı deposunda (WebView localStorage) tutulur. Kimliğinizle ilgisi yoktur.</li>
+</ul>
+<p>Bu bilgiler geliştiriciye ya da üçüncü taraflara iletilmez.</p>
+
+<h2>Ağ kullanımı</h2>
+<p>"Masa kur" diyen telefon, yalnızca yerel ağda çalışan küçük bir sunucu açar (8101 numaralı kapı) ve kendini aynı ağdaki telefonlara <code>_okey101._tcp</code> adıyla duyurur (mDNS/NSD). "Arkadaşına bağlan" diyen telefon aynı ağdaki bu duyuruları dinler; bulamazsa yerel ağdaki adresleri yoklar. Veriler yalnızca aynı ağdaki telefonlar arasında gider; internet üzerinden hiçbir sunucuya bağlanılmaz.</p>
+
+<h2>İzinler</h2>
+<ul>
+  <li><strong>İnternet / ağ durumu / Wi-Fi durumu:</strong> yerel ağda sunucu açmak ve bağlanmak için (internet trafiği oluşturmaz).</li>
+  <li><strong>Çok noktaya yayın (multicast):</strong> aynı ağdaki masaları bulabilmek için.</li>
+  <li><strong>Titreşim:</strong> sıra size gelince ve pişti yapınca kısa titreşim.</li>
+</ul>
+<p>Konum, kamera, mikrofon, kişiler, depolama gibi hassas izinler istenmez.</p>
+
+<h2>Çocuklar</h2>
+<p>Uygulama veri toplamadığı için çocuklardan da veri toplanmaz. Uygulama 13 yaş ve üzeri için sunulur.</p>
+
+<h2>Değişiklikler ve iletişim</h2>
+<p>Bu politika değişirse yeni sürüm bu sayfada yayımlanır. Sorularınız için GitHub üzerinden ulaşabilirsiniz: <a href="https://github.com/AhmetEmreOzumagi/Okey_101">github.com/AhmetEmreOzumagi/Okey_101</a>. Uygulamanın tamamı açık kaynaktır; ne yaptığı kodundan incelenebilir.</p>
+
+<hr>
+
+<h1>101 Okey · Pişti — Privacy Policy</h1>
+<p class="tarih">Last updated: 6 October 2026 · App: <code>io.github.ahmetemreozumagi.okey101</code> · Developer: Ahmet Emre Özümağı</p>
+
+<h2>In short</h2>
+<p><strong>The app does not collect, store, share or transmit any personal data.</strong> There are no ads, no analytics, no crash reporting and no accounts. No internet connection is needed; the game is played only between phones on the same local network (Wi-Fi or hotspot).</p>
+
+<h2>What is kept on the device?</h2>
+<ul>
+  <li><strong>Player name:</strong> the nickname you type when sitting at the table is shown to the other players at the same table and stored on your phone (in the app's own storage). You do not have to use your real name.</li>
+  <li><strong>Game save:</strong> on the phone that hosts the table, the game state (tiles, scores, names at the table) is kept in <code>oyun-kaydi.json</code> so the game can resume after the app is closed. The file never leaves that phone and is removed when the app is uninstalled.</li>
+  <li><strong>Session key:</strong> a random key is kept in the WebView's localStorage so your phone can rejoin the table as the same player. It is not linked to your identity.</li>
+</ul>
+<p>None of this is sent to the developer or to any third party.</p>
+
+<h2>Network use</h2>
+<p>The phone that taps "Host a table" runs a small server on the local network only (port 8101) and announces itself to phones on the same network as <code>_okey101._tcp</code> (mDNS/NSD). A phone that taps "Join a friend" listens for those announcements and, failing that, probes addresses on the local network. Data travels only between phones on the same network; no internet server is ever contacted.</p>
+
+<h2>Permissions</h2>
+<ul>
+  <li><strong>Internet / network state / Wi-Fi state:</strong> to run and reach the local-network server (no internet traffic is generated).</li>
+  <li><strong>Multicast:</strong> to discover tables on the same network.</li>
+  <li><strong>Vibrate:</strong> a short buzz when it is your turn or on a "pişti".</li>
+</ul>
+<p>No sensitive permissions (location, camera, microphone, contacts, storage) are requested.</p>
+
+<h2>Children</h2>
+<p>Since the app collects no data, it collects no data from children either. The app is offered for ages 13 and up.</p>
+
+<h2>Changes and contact</h2>
+<p>If this policy changes, the new version will be published on this page. Questions: <a href="https://github.com/AhmetEmreOzumagi/Okey_101">github.com/AhmetEmreOzumagi/Okey_101</a>. The whole app is open source; what it does can be verified in its code.</p>
+</body>
+</html>
