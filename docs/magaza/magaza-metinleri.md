@@ -2,7 +2,7 @@
 
 Play Console → Mağaza varlığı → Ana mağaza girişi. Varsayılan dil **Türkçe (tr-TR)**, çeviri olarak **İngilizce (en-US)** eklenir. Karakter sınırları: ad 30, kısa açıklama 80, uzun açıklama 4000.
 
-Görseller bu klasörde: `simge-512.png` (uygulama simgesi, 512×512), `one-cikan-1024x500.png` (öne çıkan görsel), `ekran-1…6.png` (telefon ekran görüntüleri, 1080×1920 dikey ve 1920×1080 yatay; Play 16:9 / 9:16 ister), `tablet-1…4.png` (7 ve 10 inç tablet alanlarına aynı dört dosya, 2844×1600).
+Görseller bu klasörde: `simge-512.png` (uygulama simgesi, 512×512), `one-cikan-1024x500.png` (öne çıkan görsel), `ekran-1…8.png` (telefon ekran görüntüleri, 1080×1920 dikey ve 1920×1080 yatay; Play 16:9 / 9:16 ister; 7 Batak, 8 İstanbul Emlak, 2 altı oyunlu lobi), `tablet-1…4.png` (7 ve 10 inç tablet alanlarına aynı dört dosya, 2844×1600).
 
 Gizlilik politikası adresi: `https://ahmetemreozumagi.github.io/Okey_101/gizlilik.html` (GitHub Pages: depo ayarlarından Pages → Source: `main` dalı, `/docs` klasörü açılmalı).
 
