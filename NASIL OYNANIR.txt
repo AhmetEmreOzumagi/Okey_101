@@ -1,9 +1,15 @@
-101 OKEY · PİŞTİ · RENK — NASIL OYNANIR
-=======================================
+101 OKEY · OKEY · PİŞTİ · BATAK · RENK · İSTANBUL EMLAK — NASIL OYNANIR
+=======================================================================
 
-Üç oyun var: 101 Okey (4 kişi, taşlarla), Pişti (2-4 kişi, iskambil) ve
-Renk (2-4 kişi, renkli kartlar). Hangisini oynayacağınızı masaya oturduktan
-sonra ekranın üstündeki üç düğmeden seçersiniz. Eksik kişi yerine bot oturur.
+Altı oyun var:
+  101 Okey       4 kişi, taşlarla, per açılır
+  Okey           4 kişi, taşlarla, klasik okey (101 olmayan)
+  Pişti          2-4 kişi, iskambil
+  Batak          4 kişi ihaleli ya da eşli, 3 kişi gömmeli, iskambil
+  Renk           2-4 kişi, renkli kartlar
+  İstanbul Emlak 2-4 kişi, zarla oynanan emlak ticareti (İstanbul semtleri)
+Hangisini oynayacağınızı masaya oturduktan sonra ekranın üstündeki
+düğmelerden seçersiniz. Eksik kişi yerine bot oturur.
 
 GEREKEN (sadece oyunu açan bilgisayarda, bir kez)
 Oyunu bir bilgisayar açar: Mac, Windows ya da Linux. O bilgisayarda Node.js
@@ -40,12 +46,17 @@ AYNI WI-FI'DAN (internetsiz)
    oynayabilir.
 
 SONRA
-Herkes adını yazıp masadaki boş bir sandalyeye dokunsun. Üstten oyunu seçin:
-"101 Okey", "Pişti" ya da "Renk". Altta o oyunun ayarları çıkar:
-  Okey:  Eşli/Eşsiz, Katlamalı, hamle süresi, el sayısı (4 kişi gerekir)
-  Pişti: Eşli/Eşsiz (eşli için 4 kişi), hedef puan (51/101/151), hamle süresi
-  Renk:  hedef puan (100/200/300/500), +2/+4 biriktirme, hamle süresi
-Sonra "Oyunu başlat". Pişti ve Renk 2 kişiyle de başlar.
+Herkes adını yazıp masadaki boş bir sandalyeye dokunsun. Üstten oyunu seçin.
+Altta o oyunun ayarları çıkar:
+  101 Okey: Eşli/Eşsiz, Katlamalı, hamle süresi, el sayısı (4 kişi gerekir)
+  Okey:     Eşli/Eşsiz, başlangıç puanı (10/20/30), gösterge açık/kapalı
+  Pişti:    Eşli/Eşsiz (eşli için 4 kişi), hedef puan (51/101/151)
+  Batak:    4 kişi (ihaleli), 4 eşli, 3 gömmeli; el sayısı (5/7/11)
+  Renk:     hedef puan (100/200/300/500), +2/+4 biriktirme
+  Emlak:    başlangıç parası, tur sınırı (yok/20/30/50), otopark kumbarası
+Hepsinde hamle süresi seçilir. Sonra "Oyunu başlat". Pişti, Renk ve Emlak
+2 kişiyle de başlar. Gömmeli batak 3 kişiyle oynanır: seçince fazla bot
+kendiliğinden kalkar.
 
 EKSİK VARSA: BOTLAR
 Masada boş yer varsa "Boş yerlere bot oturt"a basın (ya da boş sandalyenin
@@ -95,6 +106,10 @@ OYUN İÇİNDE
   koyup okeyi alırsınız: taşı o pere sürükleyin ya da "İşle"ye basın. Soldan
   böyle bir taş gelirse onu alıp hemen okeyi alabilirsiniz; yandan alınan taş
   işleniyorsa ana düğme "İşle" olur.
+- 3'lü gruptaki okeyi almak için eksik iki rengin ikisi de gerekir. Örnek:
+  masada kırmızı 13, sarı 13 ve okey varsa mavi 13 ile siyah 13'ün ikisini
+  de koymalısınız. Tek taş koyarsanız grup 4'lü olur, okey masada kalır.
+  İkisi de sizdeyse "İşle" ikisini birden koyup okeyi alır.
 - Atmak için taşı sağ alttaki "At" kutusuna sürükleyin (ya da seçip "At").
 - Okey elinizde de masadaki perlerde de ters (yeşil sırtı görünür) durur.
   Sahte okey sadece ✿ işaretiyle görünür (okey olan taşın yerine geçer).
@@ -102,7 +117,14 @@ OYUN İÇİNDE
 - Her hamle için süre vardır (varsayılan 30 sn). Süre dolarsa taş
   otomatik çekilip atılır.
 
-PİŞTİ VE RENK'TE
+OKEY'DE (101 OLMAYAN)
+- Istaka, çekme, dizme ve atma 101'deki gibidir; masaya per açılmaz.
+- Istakanın sağ üstünde kaç taşınızın seri/grup olarak dizili olduğu yazar
+  (ör. 11 / 14). 15. taşı atarken kalan 14 taşın hepsi dizili ya da 7 çift
+  ise "Bitir"e basın (ya da atacağınız taşı ortadaki desteye sürükleyin).
+- Göstergenin eşi elinizdeyse ilk hamlenizde "Göstergeyi göster" çıkar.
+
+PİŞTİ, BATAK VE RENK'TE
 - Telefon yan da dik de tutulabilir. Kartlarınız altta, rakipler masanın
   etrafında oturur: sağınızdaki sizden sonra oynar.
 - Kart atmak: karta iki kez dokunun; ya da bir kez dokunup ortadaki kartlara
@@ -112,8 +134,25 @@ PİŞTİ VE RENK'TE
   renk seçme penceresi açılır.
 - Renk'te 2 kartınız kalınca "SON!" düğmesine basın. Biri demeyi unutursa
   ekranda "Yakala!" düğmesi çıkar; basan olursa o kişi 2 kart çeker.
+- Batak'ta ihale sırası size gelince ortada sayılar çıkar: birine ya da
+  "Pas"a dokunun. İhaleyi alırsanız kozu seçersiniz. Gömmelide önce gömülecek
+  4 kartı seçip "Göm"e basarsınız (gömüden gelen kartlar mavi parlar).
+  Atılamayacak kartlar soluk görünür. Eşlide eşinizin kartları ortada açık
+  durur; sırası gelince onun kartına dokunarak oynarsınız.
 - El bitince sonuç tablosu gelir; menüdeki (☰) "Puan tablosu" el el puanları
   gösterir. "Kısa kurallar" o oyunun kurallarını açar.
+
+İSTANBUL EMLAK'TA
+- Telefon yan da dik de tutulabilir. Sıranız gelince "Zar at"a basın;
+  zarlar yuvarlanır, piyonunuz kare kare yürür.
+- Sahipsiz bir mülke gelince tapu kartı açılır: "Satın al" ya da
+  "Açık artırma". Tahtada herhangi bir kareye dokununca tapusu görünür.
+- "Mülklerim"den ev/otel kurar, ev satar, ipotek eder ya da ipoteği
+  kaldırırsınız. "Takas" ile bir oyuncuya mülk, para ya da hapisten çıkış
+  kartı teklif edersiniz. Botlar da size teklif getirebilir: "Kabul et" ya da
+  "Reddet".
+- Paranız yetmezse borç ekranı açılır: bina satın, ipotek edin ya da
+  "İflas et".
 
 TELEFON KAPANIRSA / BAĞLANTI KOPARSA
 Sayfayı yenileyin, kaldığınız yerden devam edersiniz. Başka telefona
@@ -149,16 +188,17 @@ Kim bilgisayara ulaşıyor, oyun penceresinde görünür: biri adresi açınca
 "Sayfa açıldı: 192.168..." satırı çıkar. Bu satır hiç çıkmıyorsa o cihaz
 bilgisayara ulaşamıyor demektir; sorun ağda, oyunda değil.
 
-OKEY KURALLARI (özet)
+101 OKEY KURALLARI (özet)
 - Herkese 21, başlayana 22 taş. Başlayan çekmeden bir taş atar. Her elden
   sonra bir sonraki oyuncu başlar.
 - Yandan aldığınız taşı aynı anda açışta ya da işlemede kullanırsınız.
 - Açtıktan sonra masadaki okeyin yerine geçen taşı koyup okeyi alabilirsiniz
-  (seri ve gruplarda; çiftlerde olmaz).
+  (seri ve gruplarda; çiftlerde olmaz). 3'lü grupta iki eksik rengin ikisi
+  de konunca okey alınır.
 - Açış: tek seferde en az 101 puanlık seri/grup ya da en az 5 çift.
   Seriyle açan, masada çiftle açan biri varsa çiftlerini de indirebilir;
   çiftle açan yeni seri kuramaz ama işleyebilir.
-- Seri: aynı renk, ardışık, en az 3 taş (12-13-1 olmaz).
+- Seri: aynı renk, ardışık, en az 3 taş (101'de 12-13-1 olmaz).
   Grup: aynı sayı, farklı renk, 3 ya da 4 taş.
 - Katlamalı (açıksa): sonra açan, rakibinin açtığından en az 1 fazlasıyla
   açar; çiftte de 1 çift fazla gerekir. Eşine katlanmaz: siz 130 açtıysanız
@@ -176,6 +216,22 @@ OKEY KURALLARI (özet)
   kalan okey 101 sayılır. Bu el de el sayısına dahildir.
 - Seçilen el sayısı bitince toplamı en düşük olan kazanır.
 
+OKEY KURALLARI (101 olmayan, özet)
+- 106 taş, 4 kişi. Herkese 14, başlayana 15 taş; başlayan çekmeden atar.
+  Okey göstergenin bir fazlasıdır; sahte okey okeyin yerine geçer.
+- Ortadan çekilir ya da soldakinin attığı son taş alınır, sonra bir taş
+  atılır. Masaya per açılmaz; okey atma ve işlek taş cezası yoktur.
+- Bitirmek: 15. taşı atarken kalan 14 taşın hepsi seri/grup ya da 7 çift.
+  Seri: aynı renk, ardışık, en az 3 taş; 12-13-1 olur, 13-1-2 olmaz.
+  Grup: aynı sayı, farklı renk, 3-4 taş. Çift: aynı iki taş (okey her taşla).
+- Puan: herkes başlangıç puanıyla başlar (varsayılan 20). Biri bitirince
+  diğerleri 2 puan kaybeder; okey atarak bitirirse 4, çiftle 4, çift ve
+  okeyle 8. Eşlide eşlerden biri bitirince karşı takım kaybeder.
+- Gösterge: göstergenin eşi elinde olan ilk hamlesinde gösterirse el
+  bitince diğerleri 1 puan kaybeder.
+- Deste biterse el puansız biter. Birinin puanı 0'a inince oyun biter;
+  puanı en yüksek olan kazanır.
+
 PİŞTİ KURALLARI (özet)
 - 52'lik desteyle 2-4 kişi. 4 kişide eşli de olur (karşılıklılar eş).
 - Ortaya 4 kart konur: 3'ü kapalı, en üstteki açık. Herkese 4 kart dağıtılır;
@@ -191,6 +247,26 @@ PİŞTİ KURALLARI (özet)
 - Hedef puana ilk ulaşan kazanır (aynı elde birden çok kişi geçerse en yüksek
   puanlı; eşitse bir el daha oynanır).
 
+BATAK KURALLARI (özet)
+- 52'lik deste, As en büyük.
+  4 kişi (ihaleli): 13'er kart, ihale 5-13, herkes pas derse ilk konuşana 4.
+  4 eşli: 13'er kart, ihale 8-13, herkes pas derse ilk konuşana 7.
+  3 gömmeli: 16'şar kart ve 4 kart gömü, ihale 8-16, herkes pas derse 7.
+- İhale dağıtandan sonrakinden başlar; her teklif öncekinden büyük olmalı,
+  pas diyen bir daha giremez. İhaleyi alan kozu söyler ve ilk eli açar.
+- Gömmelide ihaleyi alan gömüyü alır, 4 kart gömer, sonra kozu söyler.
+- Eşlide karşılıklılar eştir; ihaleyi alanın eşinin kartları açılır ve onları
+  ihaleyi alan oynar.
+- Açılan renge uymak zorunlu; yerdekini geçebiliyorsanız geçmelisiniz (el
+  kozla kesildiyse gerekmez). Renk yoksa koz atmak zorunlu, yerde koz varsa
+  büyüğünü atmalısınız. Koz da yoksa istediğinizi atarsınız.
+- Koz kırılmadan kozla el açılmaz (elde sadece koz kaldıysa açılır).
+  Eşlide kozla açılabilir.
+- Puan: ihaleyi alan tutturursa aldığı el kadar, tutturamazsa eksi ihale.
+  Diğerleri aldığı el kadar; hiç el almayan eksi ihale. Eşlide takımca:
+  karşı takım en az 2 el almazsa eksi ihale.
+- Seçilen el sayısı bitince puanı en yüksek olan kazanır.
+
 RENK KURALLARI (özet)
 - 108 kartlık renkli kart destesi, 2-4 kişi, herkese 7 kart.
 - Yerdeki kartla aynı renkte, aynı sayıda ya da aynı işarette kart atılır.
@@ -205,3 +281,25 @@ RENK KURALLARI (özet)
 - Elini ilk bitiren, rakiplerin elinde kalan kartların puanını alır: sayılar
   kendi değeri, Pas/Yön/+2 20, renk kartı ve +4 50 puan. Hedef puana ilk
   ulaşan kazanır.
+
+İSTANBUL EMLAK KURALLARI (özet)
+- 2-4 kişi. Herkes başlangıç parasıyla BAŞLA'dan çıkar; BAŞLA'dan geçen
+  ₺200 alır. İki zar atılır.
+- Sahipsiz mülke gelen alabilir; almazsa açık artırmaya çıkar (en az ₺10).
+- Başkasının mülküne gelen kira öder. Grubun hepsi aynı kişideyse boş arsa
+  kirası iki kat. İstasyon kirası istasyon sayısına göre ₺25-200, idare
+  kirası zar × 4 (ikisi birden aynı kişideyse × 10).
+- Grubun hepsi sizdeyse ev kurarsınız; evler eşit kurulur ve eşit satılır.
+  4 evden sonra otel. Bankada 32 ev, 12 otel var.
+- Çift atan tekrar atar; üst üste üç çift hapse sokar. Hapisten çıkmak için
+  ₺50 ödenir, kart kullanılır ya da çift denenir; üçüncü denemede de çift
+  gelmezse ₺50 ödenip zar kadar ilerlenir.
+- Binalar yarı fiyatına satılır, mülkler fiyatının yarısına ipotek edilir;
+  ipotekli mülkten kira alınmaz, ipotek %10 fazlasıyla kaldırılır.
+- Takas: mülk, para ve hapisten çıkış kartı. Borcunu ödeyemeyen iflas eder.
+- Otopark'ta bir şey olmaz; ayardan kumbara açılırsa vergi ve cezalar
+  birikir, Otopark'a gelen alır.
+- Tur sınırı varsa en zengin (para + mülk + bina), yoksa son kalan kazanır.
+- Semt fiyatları gerçek konut m² fiyatlarıyla orantılıdır (Emlakjet, Ekim
+  2026; Endeksa Mart 2026 ile karşılaştırıldı). En ucuz Esenyurt, en pahalı
+  Etiler.
