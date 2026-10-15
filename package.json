@@ -1,7 +1,7 @@
 {
   "name": "101-okey",
   "version": "1.0.0",
-  "description": "Arkadaşlarla telefondan oynanan 101 Okey, Pişti ve Renk. Bir bilgisayar açar, herkes tarayıcıdan girer; eksik yere bot oturur.",
+  "description": "Arkadaşlarla telefondan oynanan 101 Okey, Okey, Pişti, Batak, Renk ve İstanbul Emlak. Bir bilgisayar açar, herkes tarayıcıdan girer; eksik yere bot oturur.",
   "private": true,
   "main": "baslat.js",
   "repository": {
@@ -9,11 +9,11 @@
     "url": "https://github.com/AhmetEmreOzumagi/Okey_101.git"
   },
   "homepage": "https://github.com/AhmetEmreOzumagi/Okey_101#readme",
-  "keywords": ["okey", "101-okey", "pisti", "renk", "turkish", "card-game", "board-game", "multiplayer", "browser-game"],
+  "keywords": ["okey", "101-okey", "pisti", "batak", "renk", "emlak", "turkish", "card-game", "board-game", "multiplayer", "browser-game"],
   "scripts": {
     "start": "node baslat.js",
     "link": "node baslat.js link",
-    "test": "node --test tests/engine.test.js tests/isle.test.js tests/bot.test.js tests/pisti.test.js tests/uno.test.js tests/lobby.test.js tests/android.test.js && node tests/sim.js 200 && node tests/http-test.js"
+    "test": "node --test tests/engine.test.js tests/isle.test.js tests/bot.test.js tests/pisti.test.js tests/uno.test.js tests/lobby.test.js tests/okeyn.test.js tests/batak.test.js tests/emlak.test.js tests/android.test.js && node tests/sim.js 200 && node tests/http-test.js"
   },
   "engines": {
     "node": ">=16"

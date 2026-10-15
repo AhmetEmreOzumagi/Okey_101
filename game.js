@@ -1,18 +1,27 @@
 'use strict';
-/* Masa (lobi, koltuklar, ayarlar) ve 101 Okey oyunu. Pişti ve Renk kendi dosyalarında (pisti.js, uno.js).
+/* Masa (lobi, koltuklar, ayarlar) ve 101 Okey oyunu. Diğer oyunlar kendi dosyalarında:
+   pisti.js (Pişti), uno.js (Renk), okeyn.js (normal Okey), batak.js (Batak), emlak.js (İstanbul Emlak).
    Sunucu bunu kullanır; testler de doğrudan bunu çağırır. */
 const E = require('./public/engine.js');
 const crypto = require('crypto');
 const { GameError, fail, shuffle, newToken, addLog, nameOf, startClock } = require('./lib.js');
 const P = require('./pisti.js');
 const U = require('./uno.js');
+const ON = require('./okeyn.js');
+const BT = require('./batak.js');
+const EM = require('./emlak.js');
 
-// Kart oyunları: masadaki oyun pişti ya da renk ise hamleler o dosyaya gider
-const CARD = { pisti: P, uno: U };
+// 101 dışındaki oyunlar: masadaki oyun onlardan biriyse hamleler o dosyaya gider
+const CARD = { pisti: P, uno: U, okeyn: ON, batak: BT, emlak: EM };
 const cardGame = (s) => (s.round && CARD[s.round.game]) || null;
 
-const GAMES = ['okey', 'pisti', 'uno'];
-const DEFAULTS = { game: 'okey', rounds: 5, mode: 'solo', katlamali: false, turnSecs: 30, pistiTarget: 101, unoTarget: 200, unoStack: false };
+const GAMES = ['okey', 'okeyn', 'pisti', 'batak', 'uno', 'emlak'];
+const DEFAULTS = {
+  game: 'okey', rounds: 5, mode: 'solo', katlamali: false, turnSecs: 30, pistiTarget: 101, unoTarget: 200, unoStack: false,
+  okeynPuan: ON.START_POINTS[1], okeynGosterge: true,
+  batakTip: 'ihale', batakEl: BT.ROUND_CHOICES[1],
+  emlakPara: EM.MONEY_CHOICES[1], emlakTur: 0, emlakOtopark: false,
+};
 const TURN_CHOICES = [0, 20, 30, 45, 60];
 
 function create() {
@@ -531,7 +540,12 @@ function lobbyAction(s, seat, a, isOnline) {
     case 'addBot':
     case 'fillBots': {
       if (s.phase !== 'lobby') fail('Bot, oyun başlamadan eklenir.');
-      const targets = a.type === 'fillBots' ? [0, 1, 2, 3].filter((i) => !s.seats[i]) : [a.seat];
+      let targets = a.type === 'fillBots' ? [0, 1, 2, 3].filter((i) => !s.seats[i]) : [a.seat];
+      if (a.type === 'fillBots') {
+        // Oyun tam sayıda kişiyle oynanıyorsa (ör. 3 kişilik batak) o kadarını doldur
+        const need = playersNeeded(s.settings).exact;
+        if (need) targets = targets.slice(0, Math.max(0, need - s.seats.filter(Boolean).length));
+      }
       if (!targets.length) fail('Boş koltuk yok.');
       for (const t of targets) {
         if (!(t >= 0 && t < 4) || s.seats[t]) fail('Bu koltuk dolu.');
@@ -594,16 +608,50 @@ function lobbyAction(s, seat, a, isOnline) {
         st.unoTarget = t;
       }
       if (a.unoStack !== undefined) st.unoStack = !!a.unoStack;
+      if (a.okeynPuan !== undefined) {
+        const t = parseInt(a.okeynPuan, 10);
+        if (!ON.START_POINTS.includes(t)) fail('Geçersiz başlangıç puanı.');
+        st.okeynPuan = t;
+      }
+      if (a.okeynGosterge !== undefined) st.okeynGosterge = !!a.okeynGosterge;
+      if (a.batakTip !== undefined) {
+        if (!BT.TYPES.includes(a.batakTip)) fail('Geçersiz batak türü.');
+        st.batakTip = a.batakTip;
+      }
+      if (a.batakEl !== undefined) {
+        const t = parseInt(a.batakEl, 10);
+        if (!BT.ROUND_CHOICES.includes(t)) fail('Geçersiz el sayısı.');
+        st.batakEl = t;
+      }
+      if (a.emlakPara !== undefined) {
+        const t = parseInt(a.emlakPara, 10);
+        if (!EM.MONEY_CHOICES.includes(t)) fail('Geçersiz başlangıç parası.');
+        st.emlakPara = t;
+      }
+      if (a.emlakTur !== undefined) {
+        const t = parseInt(a.emlakTur, 10);
+        if (!EM.TURN_CHOICES.includes(t)) fail('Geçersiz tur sınırı.');
+        st.emlakTur = t;
+      }
+      if (a.emlakOtopark !== undefined) st.emlakOtopark = !!a.emlakOtopark;
+      // Oyun daha az kişiyle oynanıyorsa (3 kişilik gömmeli batak) fazla botlar kendiliğinden kalkar
+      const need = playersNeeded(st).exact;
+      if (need) {
+        for (let i = 3; i >= 0 && s.seats.filter(Boolean).length > need; i--) {
+          if (s.seats[i] && s.seats[i].bot) { addLog(s, `${s.seats[i].name} masadan kalktı (oyun ${need} kişilik).`); s.seats[i] = null; }
+        }
+      }
       return;
     }
     case 'start': {
       if (s.phase !== 'lobby') fail('Oyun zaten başladı.');
       const game = s.settings.game || 'okey';
       const seated = s.seats.filter(Boolean);
-      if (game === 'okey') {
-        if (s.seats.some((p) => !p)) fail('Başlamak için 4 kişi gerekli. Boş yerlere bot oturtabilirsin.');
+      const need = playersNeeded(s.settings);
+      if (need.exact) {
+        if (seated.length !== need.exact) fail(need.exact === 4 ? 'Başlamak için 4 kişi gerekli. Boş yerlere bot oturtabilirsin.' : `Bu oyun ${need.exact} kişiyle oynanır. Masada ${seated.length} kişi var; ${seated.length > need.exact ? 'bir koltuğu boşalt (çıkar / kalk)' : 'boş yere bot oturt'}.`);
       } else {
-        if (seated.length < 2) fail('Başlamak için en az 2 kişi gerekli. Boş yerlere bot oturtabilirsin.');
+        if (seated.length < need.min) fail(`Başlamak için en az ${need.min} kişi gerekli. Boş yerlere bot oturtabilirsin.`);
         if (game === 'pisti' && s.settings.mode === 'team' && seated.length < 4) fail('Eşli pişti için 4 kişi gerekli.');
       }
       if (seated.every((p) => p.bot)) fail('Masada en az bir kişi olmalı.');
@@ -638,6 +686,14 @@ function dropAway(s, isAway) {
     }
   });
   return changed;
+}
+
+// Oyunun kaç kişiyle oynandığı: exact (tam bu kadar) ya da min
+function playersNeeded(st) {
+  const g = st.game || 'okey';
+  if (g === 'okey' || g === 'okeyn') return { exact: 4 };
+  if (g === 'batak') return { exact: st.batakTip === 'gommeli' ? 3 : 4 };
+  return { min: 2 };
 }
 
 function teamTotals(totals) {
@@ -697,4 +753,4 @@ function view(s, token, isOnline, extra) {
   return v;
 }
 
-module.exports = { create, normalize, join, lobbyAction, act, view, seatOf, deal, tick, dropAway, openReq, pairsAllowed, GameError, newToken, TURN_CHOICES, GAMES, CARD };
+module.exports = { create, normalize, join, lobbyAction, act, view, seatOf, deal, tick, dropAway, openReq, pairsAllowed, playersNeeded, GameError, newToken, TURN_CHOICES, GAMES, CARD };

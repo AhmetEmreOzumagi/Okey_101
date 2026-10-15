@@ -173,21 +173,24 @@ function playStep(s, seat) {
 }
 
 // Sıradaki bot hamlesini yapar. Bir şey değiştiyse true döner.
-// Pişti ve Renk botları: sırası gelen bot biraz bekleyip tek hamle yapar
-const CARD_DELAY = { pisti: [900, 1500], uno: [1000, 1700] };
+// Diğer oyunların botları: sırası gelen bot biraz bekleyip tek hamle yapar.
+// Oyun dosyası actor(s) verirse (ihale, açık artırma, takas cevabı gibi sırası olmayan anlar) o koltuk oynar;
+// botDelay(s) verirse bekleme süresini o belirler.
+const CARD_DELAY = { pisti: [900, 1500], uno: [1000, 1700], okeyn: [800, 1400], batak: [850, 1400], emlak: [700, 1200] };
 function cardStep(s, now, M) {
   const r = s.round;
-  const seat = r.turn;
-  const p = s.seats[seat];
+  const seat = M.actor ? M.actor(s) : r.turn;
+  const p = seat >= 0 ? s.seats[seat] : null;
   if (!p || !p.bot) {
     if (r.botAt) r.botAt = 0;
     return false;
   }
-  const key = `${r.moveNo}:${seat}:${r.drew ? 1 : 0}:${r.pending || 0}`;
+  const key = `${r.moveNo}:${seat}:${r.drew ? 1 : 0}:${r.pending || 0}:${r.phase || ''}`;
   if (!r.botAt || r.botKey !== key) {
     // Biri SON demeyi unuttuysa yakalamak için insanlara biraz zaman tanı
     const extra = r.vulnerable >= 0 ? 900 : 0;
-    r.botAt = now + rand(CARD_DELAY[r.game]) + extra;
+    const d = M.botDelay ? M.botDelay(s, seat) : null;
+    r.botAt = now + (d !== null && d !== undefined ? d : rand(CARD_DELAY[r.game] || [900, 1500])) + extra;
     r.botKey = key;
     return false;
   }
@@ -197,9 +200,10 @@ function cardStep(s, now, M) {
     M.botAct(s, seat);
   } catch (e) {
     console.error('  (bot hatası)', e && e.message);
-    // takılmasın: renk oyununda kart çek / pas, piştide ilk kartı at
+    // takılmasın: oyunun kendi yedek hamlesi, yoksa renk oyununda kart çek / pas, piştide ilk kartı at
     try {
-      if (r.game === 'uno') G.act(s, seat, { type: r.drew ? 'pass' : 'draw' });
+      if (M.botFallback) M.botFallback(s, seat);
+      else if (r.game === 'uno') G.act(s, seat, { type: r.drew ? 'pass' : 'draw' });
       else G.act(s, seat, { type: 'play', card: r.hands[seat][0] });
     } catch (e2) {}
   }

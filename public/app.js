@@ -34,10 +34,15 @@
   // Avatar içi: bot için robot, kişi için baş harf
   const avatarText = (p) => (p && p.bot ? '🤖' : esc(initial(p && p.name)));
 
-  // Masadaki oyun pişti ya da renk mi (okey dışındaki kart oyunları ayrı ekranda)
-  const isCard = (v) => !!(v && v.round && v.round.game && v.round.game !== 'okey');
-  const GAME_TITLE = { okey: '101 Okey', pisti: 'Pişti', uno: 'Renk' };
-  function cardCtx() { return { api, toast, esc, modal, closeModal, avatarText, showMenu }; }
+  // Oyun türleri: taşlı (101 Okey, Okey) ıstaka ekranında, kart oyunları (Pişti, Batak, Renk) kart masasında,
+  // İstanbul Emlak kendi tahtasında oynanır.
+  const KIND = { okey: 'tile', okeyn: 'tile', pisti: 'card', batak: 'card', uno: 'card', emlak: 'board' };
+  const gameOf = (v) => (v && v.round && v.round.game) || 'okey';
+  const isCard = (v) => !!(v && v.round && KIND[gameOf(v)] === 'card');
+  const isBoard = (v) => !!(v && v.round && KIND[gameOf(v)] === 'board');
+  const isOkeyN = (v) => !!(v && v.round && gameOf(v) === 'okeyn');
+  const GAME_TITLE = { okey: '101 Okey', okeyn: 'Okey', pisti: 'Pişti', batak: 'Batak', uno: 'Renk', emlak: 'İstanbul Emlak' };
+  function cardCtx() { return { api, toast, esc, modal, closeModal, confirmBox, avatarText, showMenu, showScores }; }
 
   // =============== Bağlantı ===============
   let es = null, lastSeen = Date.now(), pollTimer = null, polling = false;
@@ -179,7 +184,7 @@
       swapSlots.clear();
       let saved = null;
       try { saved = JSON.parse(LS.get(rackKey(r.id)) || 'null'); } catch (e) {}
-      rack.slots = Array.isArray(saved) && saved.length === SLOTS ? saved : E.arrangeRack(r.hand, r.okey, 'runs', COLS, 2);
+      rack.slots = Array.isArray(saved) && saved.length === SLOTS ? saved : (isOkeyN(view) ? E.arrangeN(r.hand, r.okey, COLS, 2) : E.arrangeRack(r.hand, r.okey, 'runs', COLS, 2));
       rackKind = 'runs';
     }
     if (pendingSide !== null && !(myTurn() && r.tphase === 'draw' && r.sideTile === pendingSide)) pendingSide = null;
@@ -276,8 +281,47 @@
     return E.planIsle(hand, r.melds, r.okey, keep, pendingSide);
   }
 
+  // =============== Normal okey ===============
+  // Bitirme: seçili taş (ya da kendiliğinden bulunan taş) atılınca kalan 14 taş per/çift oluyor mu
+  let finCache = { key: '', res: null };
+  function finishPlanN() {
+    const r = view.round;
+    if (!myTurn() || r.tphase !== 'play' || r.hand.length !== 15) return null;
+    const sel = selectedInOrder();
+    const key = r.hand.slice().sort((a, b) => a - b).join(',') + '|' + sel.join(',');
+    if (finCache.key === key) return finCache.res;
+    const tryTile = (id) => {
+      const f = E.finishN(r.hand.filter((x) => x !== id), r.okey);
+      return f ? { tile: id, pairs: f.kind === 'pairs', okey: E.isWild(id, r.okey) } : null;
+    };
+    let res = null;
+    if (sel.length === 1) res = tryTile(sel[0]);
+    if (!res) for (const id of r.hand.filter((x) => E.isWild(x, r.okey))) { res = tryTile(id); if (res) break; }
+    if (!res) for (const id of r.hand) { if (E.isWild(id, r.okey)) continue; res = tryTile(id); if (res) break; }
+    finCache = { key, res };
+    return res;
+  }
+  function planN() {
+    const r = view.round, mine = myTurn();
+    const p = { info: null, opened: null, mine, primary: null, second: null, link: null, hint: '', isle: { ops: [], usedMust: false }, isleOn: false, toMeld: null };
+    if (!mine) {
+      p.primary = { act: 'finish', label: 'Bitir', on: false };
+      p.second = { act: 'discard', label: 'At', on: false };
+    } else if (r.tphase === 'draw') {
+      p.primary = r.stockCount > 0 ? { act: 'draw', label: 'Çek', on: true } : { act: 'endStock', label: 'Eli bitir', on: true };
+      p.second = { act: 'take', label: 'Yandan al', on: !!r.canTake };
+    } else {
+      const fin = finishPlanN();
+      p.primary = { act: 'finish', label: 'Bitir', sub: fin ? (fin.pairs ? 'çiftten' : '') + (fin.okey ? (fin.pairs ? ' + ' : '') + 'okeyle' : '') : '', on: !!fin };
+      p.second = { act: 'discard', label: 'At', on: selected.size === 1 };
+    }
+    if (mine && r.canShow) p.link = { act: 'show', label: 'Göstergeyi göster' };
+    return p;
+  }
+
   // =============== Ne yapılabilir? ===============
   function plan() {
+    if (isOkeyN(view)) return planN();
     const v = view, r = v.round, me = v.me, opened = r.opened[me];
     const info = rackInfo();
     const mine = myTurn();
@@ -342,6 +386,29 @@
   // =============== Hamleler ===============
   function doAct(act) {
     const r = view.round;
+    if (isOkeyN(view)) {
+      switch (act) {
+        case 'draw': return api('draw');
+        case 'take': return api('take');
+        case 'show': return api('show');
+        case 'endStock':
+          return confirmBox('El bitsin mi?', 'Deste bitti. El puansız biter.', 'Eli bitir').then((y) => y && api('endStock'));
+        case 'finish': {
+          const f = finishPlanN();
+          if (!f) { toast('Elin henüz bitmiyor: 14 taşın hepsi seri/grup ya da 7 çift olmalı.'); return; }
+          selected.clear();
+          return api('finish', { tile: f.tile });
+        }
+        case 'discard': {
+          const ids = selectedInOrder();
+          if (ids.length !== 1) { toast('Atmak için tek bir taş seç.'); return; }
+          return discardTile(ids[0]);
+        }
+        case 'sortRuns': rackKind = 'runs'; arrange('runs'); return;
+        case 'sortPairs': rackKind = 'pairs'; arrange('pairs'); return;
+      }
+      return;
+    }
     switch (act) {
       case 'draw':
         if (pendingSide !== null) giveBack(true);
@@ -391,7 +458,7 @@
     const r = view.round;
     const ids = r.hand.concat(pendingSide !== null ? [pendingSide] : []);
     const rects = captureRects();
-    rack.slots = E.arrangeRack(ids, r.okey, kind, COLS, 2);
+    rack.slots = isOkeyN(view) && kind === 'runs' ? E.arrangeN(ids, r.okey, COLS, 2) : E.arrangeRack(ids, r.okey, kind, COLS, 2);
     selected.clear();
     saveRack();
     render();
@@ -448,7 +515,7 @@
     if (id === pendingSide) return;
     const finishing = r.hand.length === 1;
     let ask = null;
-    if (!finishing) {
+    if (!finishing && !isOkeyN(view)) {
       if (E.isWild(id, r.okey)) ask = ['Okey atıyorsun', 'Okey atmanın cezası 101 puan. Yine de atılsın mı?'];
       else if (E.isLayable(id, r.melds, r.okey)) ask = ['Bu taş işlenebilir', 'Masadaki bir pere işlenebilecek taşı atmanın cezası 101 puan. Yine de atılsın mı?'];
     }
@@ -487,13 +554,25 @@
     const v = view;
     const inGame = v.me >= 0 && v.phase !== 'lobby' && v.round;
     const card = !!inGame && isCard(v);
+    const board = !!inGame && isBoard(v);
     document.body.classList.toggle('in-game', !!inGame);
-    document.body.classList.toggle('card-game', card);
+    document.body.classList.toggle('card-game', card || board);
+    document.body.classList.toggle('board-game', board);
     $('#lobby').classList.toggle('hidden', !!inGame);
-    $('#game').classList.toggle('hidden', !inGame || card);
+    $('#game').classList.toggle('hidden', !inGame || card || board);
     $('#cg').classList.toggle('hidden', !card);
+    $('#em').classList.toggle('hidden', !board);
     const before = lastRendered;
-    if (card) {
+    if (board) {
+      window.EmlakUI.render(v, cardCtx());
+      renderOverlayBoard();
+      const mine = window.EmlakUI.myMove(v);
+      if (mine && !lastTurnMine) {
+        warned = false;
+        if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) { try { navigator.vibrate(120); } catch (e) {} }
+      }
+      lastTurnMine = mine;
+    } else if (card) {
       window.CardUI.render(v, cardCtx());
       window.CardUI.overlay(v, cardCtx());
       const mine = myTurn();
@@ -531,19 +610,46 @@
     const CU = window.CardUI;
     const icons = {
       okey: '<span class="gt c0">1</span><span class="gt c2">0</span><span class="gt c3">1</span>',
+      okeyn: '<span class="gt c3">7</span><span class="gt c0">7</span><span class="gt c1">7</span>',
       pisti: CU.pcard(10, 'mini') + CU.pcard(13, 'mini'),
+      batak: CU.pcard(0, 'mini') + CU.pcard(12, 'mini'),
       uno: CU.ucard(7, 'mini') + CU.ucard(104, 'mini'),
+      emlak: EMLAK_ICON,
     };
     const item = (id, title, sub) => `<button class="gpick${g === id ? ' on' : ''}" data-set="game" data-val="${id}"${can || g === id ? '' : ' disabled'}>` +
       `<span class="gicon ${id}">${icons[id]}</span><span class="gtx"><b>${title}</b><small>${sub}</small></span></button>`;
-    return '<div class="gpicks">' + item('okey', '101 Okey', '4 kişi · taşlarla') + item('pisti', 'Pişti', '2-4 kişi · iskambil') + item('uno', 'Renk', '2-4 kişi · renkli kartlar') + '</div>' +
+    return '<div class="gpicks">' + item('okey', '101 Okey', '4 kişi · taşlarla') + item('okeyn', 'Okey', '4 kişi · klasik') +
+      item('pisti', 'Pişti', '2-4 kişi · iskambil') + item('batak', 'Batak', '3-4 kişi · ihaleli') +
+      item('uno', 'Renk', '2-4 kişi · renkli kartlar') + item('emlak', 'Emlak', '2-4 kişi · İstanbul') + '</div>' +
       (can ? '' : v.phase === 'lobby' ? '<p class="gnote">Oyunu masaya oturan seçer.</p>' : '');
   }
+  // Emlak simgesi: zar ve ev
+  const EMLAK_ICON = '<svg class="emic" viewBox="0 0 48 34" aria-hidden="true"><rect x="2" y="9" width="21" height="21" rx="4" fill="#fffdf6" stroke="#cdbf9c"/>' +
+    '<circle cx="8" cy="15" r="2.2" fill="#c8102e"/><circle cx="12.5" cy="19.5" r="2.2" fill="#c8102e"/><circle cx="17" cy="24" r="2.2" fill="#c8102e"/>' +
+    '<path d="M27 19 L37 10 L47 19 V31 H27 Z" fill="#2c9c59" stroke="#0f3b28" stroke-width="1.2"/><rect x="34" y="23" width="6" height="8" fill="#0f3b28"/><rect x="30" y="20" width="4" height="4" fill="#f8f2df"/><rect x="40" y="20" width="4" height="4" fill="#f8f2df"/></svg>';
+
+  // Oyunun kaç kişiyle oynandığı (sunucudaki playersNeeded ile aynı)
+  function playersNeeded(st) {
+    const g = st.game || 'okey';
+    if (g === 'okey' || g === 'okeyn') return { exact: 4 };
+    if (g === 'batak') return { exact: st.batakTip === 'gommeli' ? 3 : 4 };
+    if (g === 'pisti' && st.mode === 'team') return { exact: 4 };
+    return { min: 2 };
+  }
+  // Eşli mi: okeyde, okey'de ve piştide ayardan, batakta türünden
+  function teamOn(st) {
+    const g = st.game || 'okey';
+    if (g === 'batak') return st.batakTip === 'esli';
+    return st.mode === 'team' && (g === 'okey' || g === 'okeyn' || g === 'pisti');
+  }
+  const BATAK_TIP = { ihale: '4 kişi ihaleli', esli: '4 kişi eşli', gommeli: '3 kişi gömmeli' };
+  const money = (n) => '₺' + Number(n).toLocaleString('tr-TR');
 
   function renderLobby(before) {
     const v = view, me = v.me, seated = me >= 0, lobby = v.phase === 'lobby';
-    const game = v.settings.game || 'okey';
-    const team = v.settings.mode === 'team' && game !== 'uno';
+    const st = v.settings;
+    const game = st.game || 'okey';
+    const team = teamOn(st);
     $('#lgames').innerHTML = gamesHTML(v);
     $('#ltitle').textContent = GAME_TITLE[game] || '101 Okey';
     $('#nameBar').classList.toggle('hidden', seated);
@@ -551,26 +657,26 @@
     const base = seated ? me : 0;
     const pos = (seat) => ['p-bottom', 'p-right', 'p-top', 'p-left'][(seat - base + 4) % 4];
     const filled = v.seats.filter((p) => p).length;
+    const need = playersNeeded(st);
     let h = '<div class="ltable"><div class="board"></div><div class="tcenter">';
     if (lobby) {
-      const st = v.settings;
       const secs = `<span class="tag">${st.turnSecs ? st.turnSecs + ' sn' : 'Süresiz'}</span>`;
-      if (game === 'okey') {
-        h += '<div class="tags">' +
-          `<span class="tag">${team ? 'Eşli' : 'Eşsiz'}</span>` +
-          (st.katlamali ? '<span class="tag">Katlamalı</span>' : '') + secs +
-          `<span class="tag">${st.rounds} el</span></div>`;
-      } else if (game === 'pisti') {
-        h += `<div class="tags"><span class="tag">${team ? 'Eşli' : 'Eşsiz'}</span>${secs}<span class="tag">${st.pistiTarget} puan</span></div>`;
-      } else {
-        h += `<div class="tags">${secs}<span class="tag">${st.unoTarget} puan</span>${st.unoStack ? '<span class="tag">+2/+4 biriktirme</span>' : ''}</div>`;
-      }
-      const need = game === 'okey' || team ? 4 : 2;
-      const ready = game === 'okey' ? filled === 4 : filled >= need;
-      h += `<div class="count">${game === 'okey' ? `${filled} / 4 oyuncu` : `${filled} oyuncu · ${need === 4 ? '4 kişi gerekli' : 'en az 2 kişi'}`}</div>`;
+      const tag = (t) => `<span class="tag">${t}</span>`;
+      let tags = '';
+      if (game === 'okey') tags = tag(team ? 'Eşli' : 'Eşsiz') + (st.katlamali ? tag('Katlamalı') : '') + secs + tag(st.rounds + ' el');
+      else if (game === 'okeyn') tags = tag(team ? 'Eşli' : 'Eşsiz') + secs + tag(st.okeynPuan + ' puan');
+      else if (game === 'pisti') tags = tag(team ? 'Eşli' : 'Eşsiz') + secs + tag(st.pistiTarget + ' puan');
+      else if (game === 'batak') tags = tag(BATAK_TIP[st.batakTip] || 'Batak') + secs + tag(st.batakEl + ' el');
+      else if (game === 'uno') tags = secs + tag(st.unoTarget + ' puan') + (st.unoStack ? tag('+2/+4 biriktirme') : '');
+      else tags = tag(money(st.emlakPara)) + secs + tag(st.emlakTur ? st.emlakTur + ' tur' : 'Son kalan kazanır');
+      h += '<div class="tags">' + tags + '</div>';
+      const ready = need.exact ? filled === need.exact : filled >= need.min;
+      h += `<div class="count">${need.exact ? `${filled} / ${need.exact} oyuncu` : `${filled} oyuncu · en az ${need.min} kişi`}</div>`;
+      if (need.exact && filled > need.exact) h += `<div class="count warn">Bu oyun ${need.exact} kişiyle oynanır: bir koltuğu boşaltın</div>`;
       if (seated) {
         h += `<button class="btn primary" data-act="start"${ready ? '' : ' disabled'}>Oyunu başlat</button>`;
-        if (filled < 4) h += `<button class="lnk botfill" data-act="fillBots">Boş yerlere bot oturt (${4 - filled})</button>`;
+        const room = (need.exact || 4) - filled;
+        if (room > 0) h += `<button class="lnk botfill" data-act="fillBots">Boş yerlere bot oturt (${room})</button>`;
       } else if (filled === 4) {
         const clearable = v.seats.some((p) => p && (p.bot || !p.online));
         h += `<div class="count">${clearable ? 'Masa dolu: bağlantısı olmayanın ya da botun altındaki <b>çıkar</b>\'a dokun, boşalan yere otur' : 'Masa dolu'}</div>`;
@@ -615,30 +721,51 @@
     $('#ltable').innerHTML = h;
 
     // Ayarlar
-    const st = v.settings, dis = !(seated && lobby);
+    const dis = !(seated && lobby);
     const seg = (key, opts, cur) => '<div class="seg">' + opts.map((o) =>
       `<button data-set="${key}" data-val="${o[0]}" class="${String(o[0]) === String(cur) ? 'on' : ''}"${dis ? ' disabled' : ''}>${o[1]}</button>`).join('') + '</div>';
+    const row = (lbl, inner, help) => `<div class="setrow"><span class="lbl">${lbl}</span>${inner}${help ? `<span class="help">${help}</span>` : ''}</div>`;
     let sh = `<div class="card-dark"><h2>${GAME_TITLE[game]} ayarları</h2>`;
-    const secsRow = '<div class="setrow"><span class="lbl">Hamle süresi</span>' + seg('turnSecs', [[20, '20 sn'], [30, '30 sn'], [45, '45'], [60, '60'], [0, 'Yok']], st.turnSecs) + '</div>';
+    const secsRow = row('Hamle süresi', seg('turnSecs', [[20, '20 sn'], [30, '30 sn'], [45, '45'], [60, '60'], [0, 'Yok']], st.turnSecs));
+    const teamRow = (help) => row('Oyun', seg('mode', [['solo', 'Eşsiz'], ['team', 'Eşli']], st.mode), help);
     if (game === 'okey') {
-      sh += '<div class="setrow"><span class="lbl">Oyun</span>' + seg('mode', [['solo', 'Eşsiz'], ['team', 'Eşli']], st.mode) +
-        (team ? '<span class="help">Karşılıklı oturanlar eş olur, puanlar toplanır. Biri bitince eşinin el cezası silinir.</span>' : '') + '</div>';
-      sh += '<div class="setrow"><span class="lbl">Katlamalı</span>' + seg('katlamali', [['false', 'Kapalı'], ['true', 'Açık']], st.katlamali) +
-        (st.katlamali ? '<span class="help">Sonra açan, rakibinin açtığından en az 1 fazlasıyla açar (çiftte de 1 çift fazla). Eşine katlanmaz.</span>' : '') + '</div>';
+      sh += teamRow(team ? 'Karşılıklı oturanlar eş olur, puanlar toplanır. Biri bitince eşinin el cezası silinir.' : '');
+      sh += row('Katlamalı', seg('katlamali', [['false', 'Kapalı'], ['true', 'Açık']], st.katlamali),
+        st.katlamali ? 'Sonra açan, rakibinin açtığından en az 1 fazlasıyla açar (çiftte de 1 çift fazla). Eşine katlanmaz.' : '');
       sh += secsRow;
-      sh += '<div class="setrow"><span class="lbl">El sayısı</span>' + seg('rounds', [[1, '1'], [3, '3'], [5, '5'], [7, '7'], [9, '9'], [11, '11']], st.rounds) + '</div>';
+      sh += row('El sayısı', seg('rounds', [[1, '1'], [3, '3'], [5, '5'], [7, '7'], [9, '9'], [11, '11']], st.rounds));
+    } else if (game === 'okeyn') {
+      sh += teamRow(team ? 'Karşılıklı oturanlar eş olur; eşlerden biri bitirince ikisi de puan kaybetmez.' : 'Dört kişi, herkes kendi için oynar.');
+      sh += row('Başlangıç puanı', seg('okeynPuan', (view.okeynPuanlar || [10, 20, 30]).map((x) => [x, String(x)]), st.okeynPuan),
+        'Herkes bu puanla başlar; biri bitirince diğerlerinin puanı düşer. Puanı biten oyunu kaybeder.');
+      sh += row('Gösterge', seg('okeynGosterge', [['true', 'Açık'], ['false', 'Kapalı']], st.okeynGosterge),
+        st.okeynGosterge ? 'Göstergenin eşi elinde olan, ilk hamlesinde gösterirse diğerleri 1 puan kaybeder.' : '');
+      sh += secsRow;
     } else if (game === 'pisti') {
-      sh += '<div class="setrow"><span class="lbl">Oyun</span>' + seg('mode', [['solo', 'Eşsiz'], ['team', 'Eşli']], st.mode) +
-        '<span class="help">' + (team ? 'Dört kişi oynanır, karşılıklı oturanlar eş olur, puanlar toplanır.' : '2, 3 ya da 4 kişi, herkes kendi için oynar.') + '</span></div>';
-      sh += '<div class="setrow"><span class="lbl">Hedef puan</span>' + seg('pistiTarget', [[51, '51'], [101, '101'], [151, '151']], st.pistiTarget) + '</div>';
+      sh += teamRow(team ? 'Dört kişi oynanır, karşılıklı oturanlar eş olur, puanlar toplanır.' : '2, 3 ya da 4 kişi, herkes kendi için oynar.');
+      sh += row('Hedef puan', seg('pistiTarget', [[51, '51'], [101, '101'], [151, '151']], st.pistiTarget));
       sh += secsRow;
       sh += '<p class="help">Pişti 10, As ile pişti 20, Vale ile pişti 30 puan. As ve Vale 1, sinek ikili 2, karo onlu 3, en çok kart 3 puan.</p>';
-    } else {
-      sh += '<div class="setrow"><span class="lbl">Hedef puan</span>' + seg('unoTarget', [[100, '100'], [200, '200'], [300, '300'], [500, '500']], st.unoTarget) + '</div>';
-      sh += '<div class="setrow"><span class="lbl">+2 / +4 biriktirme</span>' + seg('unoStack', [['false', 'Kapalı'], ['true', 'Açık']], st.unoStack) +
-        '<span class="help">' + (st.unoStack ? '+2 gelince +2 ya da +4, +4 gelince +4 atıp cezayı sıradakine aktarabilirsin.' : '+2 ya da +4 gelen kartları çeker, sırası geçer.') + '</span></div>';
+    } else if (game === 'batak') {
+      sh += row('Tür', seg('batakTip', [['ihale', '4 kişi'], ['esli', '4 eşli'], ['gommeli', '3 gömmeli']], st.batakTip),
+        st.batakTip === 'gommeli' ? '3 kişi, herkese 16 kart; 4 kart gömüye gider. İhaleyi alan gömüyü alır, 4 kart gömer.'
+          : st.batakTip === 'esli' ? 'Karşılıklı oturanlar eş; ihaleyi takım tutturmaya çalışır.' : 'Dört kişi, herkes kendi için oynar. İhaleyi alan kozu seçer.');
+      sh += row('El sayısı', seg('batakEl', (view.batakEller || [5, 7, 11]).map((x) => [x, String(x)]), st.batakEl));
+      sh += secsRow;
+    } else if (game === 'uno') {
+      sh += row('Hedef puan', seg('unoTarget', [[100, '100'], [200, '200'], [300, '300'], [500, '500']], st.unoTarget));
+      sh += row('+2 / +4 biriktirme', seg('unoStack', [['false', 'Kapalı'], ['true', 'Açık']], st.unoStack),
+        st.unoStack ? '+2 gelince +2 ya da +4, +4 gelince +4 atıp cezayı sıradakine aktarabilirsin.' : '+2 ya da +4 gelen kartları çeker, sırası geçer.');
       sh += secsRow;
       sh += '<p class="help">2, 3 ya da 4 kişi. Elinde 2 kart kalınca "SON!" demeyi unutma.</p>';
+    } else {
+      sh += row('Başlangıç parası', seg('emlakPara', (view.emlakParalar || [1000, 1500, 2000]).map((x) => [x, money(x)]), st.emlakPara));
+      sh += row('Oyun sonu', seg('emlakTur', [[0, 'Son kalan'], [20, '20 tur'], [30, '30 tur'], [50, '50 tur']], st.emlakTur),
+        st.emlakTur ? `${st.emlakTur} tur sonunda en zengin (para + mülk + bina) kazanır.` : 'Herkes iflas edene kadar sürer; son kalan kazanır.');
+      sh += row('Otopark kumbarası', seg('emlakOtopark', [['false', 'Kapalı'], ['true', 'Açık']], st.emlakOtopark),
+        st.emlakOtopark ? 'Vergiler ve cezalar ortada birikir; Otopark\'a gelen hepsini alır.' : 'Resmî kural: Otopark\'ta bir şey olmaz.');
+      sh += secsRow;
+      sh += '<p class="help">22 İstanbul semti gerçek konut fiyatlarına göre ucuzdan pahalıya dizildi. Zar at, al, kirayı topla, ev ve otel kur.</p>';
     }
     sh += '</div>';
     $('#lsettings').innerHTML = sh;
@@ -700,12 +827,21 @@
     const v = view, r = v.round, p = v.seats[seat];
     if (!p) return '';
     let bd = '';
-    if (r.opened[seat] === 'runs') bd += `<span class="op">${r.openValue[seat]}</span>`;
+    if (isOkeyN(v)) {
+      bd += `<span class="tot">${r.points[seat]} puan</span>`;
+      if (r.shown === seat) bd += '<span class="op">gösterge</span>';
+      if (isTeam() && seat === (v.me + 2) % 4) bd += '<span class="mate">eş</span>';
+      if (p.bot) bd += '<span class="bot">bot</span>';
+    } else if (r.opened[seat] === 'runs') bd += `<span class="op">${r.openValue[seat]}</span>`;
     else if (r.opened[seat] === 'pairs') bd += `<span class="op">${r.openValue[seat]} çift</span>`;
-    if (r.penalties[seat]) bd += `<span class="pen">+${r.penalties[seat]}</span>`;
-    if (isTeam() && seat === (v.me + 2) % 4) bd += '<span class="mate">eş</span>';
-    if (p.bot) bd += '<span class="bot">bot</span>';
-    if (v.completed > 0) bd += `<span class="tot">${v.totals[seat]} puan</span>`;
+    if (!isOkeyN(v)) {
+      if (r.penalties[seat]) bd += `<span class="pen">+${r.penalties[seat]}</span>`;
+      if (isTeam() && seat === (v.me + 2) % 4) bd += '<span class="mate">eş</span>';
+    }
+    if (!isOkeyN(v)) {
+      if (p.bot) bd += '<span class="bot">bot</span>';
+      if (v.completed > 0) bd += `<span class="tot">${v.totals[seat]} puan</span>`;
+    }
     const turn = v.phase === 'playing' && r.turn === seat ? ' turn' : '';
     const av = `<div class="av${p.bot ? ' bot' : ''}">${avatarText(p)}<svg viewBox="0 0 36 36"><circle class="tr" cx="18" cy="18" r="16"/><circle class="pg" cx="18" cy="18" r="16" pathLength="100"/></svg>${p.online ? '' : '<span class="off"></span>'}</div>`;
     if (side) return `<div class="who ${teamCls(seat)}${turn}" data-seat="${seat}">${av}<div class="nm">${esc(p.name)}</div><div class="bd">${bd}</div></div>`;
@@ -748,7 +884,10 @@
     let main;
     const mineNow = myTurn();
     if (v.phase !== 'playing') main = '';
-    else if (mineNow) {
+    else if (mineNow && isOkeyN(v)) {
+      if (r.tphase === 'draw') main = r.stockCount ? (r.canTake ? 'Sıra sende: çek ya da soldakini al' : 'Sıra sende: desteden çek') : 'Deste bitti: yandan al ya da eli bitir';
+      else main = finishPlanN() ? 'Elin bitiyor: Bitir\'e bas!' : 'Bir taş at';
+    } else if (mineNow) {
       if (r.tphase === 'draw' && pendingSide !== null) main = r.opened[me] ? 'Yandan aldığını işle ya da indir' : 'Yandan aldığınla aç';
       else if (r.tphase === 'draw') main = r.stockCount ? (r.canTake ? 'Sıra sende: çek ya da soldakini al' : 'Sıra sende: desteden çek') : 'Deste bitti';
       else if (r.hand.length === 1) main = 'Son taşını at ve bitir';
@@ -763,7 +902,23 @@
     renderActions();
   }
 
+  function renderMeldsN() {
+    const v = view, r = v.round, me = v.me;
+    const order = [me, (me + 1) % 4, (me + 2) % 4, (me + 3) % 4];
+    let h = '<div class="nboard"><div class="nhead">Puanlar <small>(herkes ' + r.start + ' ile başladı · puanı biten kaybeder)</small></div><div class="npts">';
+    order.forEach((s) => {
+      const low = r.points[s] <= 4 ? ' low' : '';
+      h += `<div class="npt ${teamCls(s)}${s === me ? ' me' : ''}${low}"><span>${esc(seatName(s))}</span><b>${r.points[s]}</b></div>`;
+    });
+    h += '</div><div class="nhint">';
+    if (r.shown >= 0) h += `<b>${esc(seatName(r.shown))}</b> göstergeyi gösterdi: el bitince ${isTeam() ? 'rakip takım' : 'diğerleri'} 1 puan kaybeder.<br>`;
+    h += 'Taşlarını seri ve gruplara diz (12-13-1 de olur). 15. taşı atarken kalan 14 taş tamamsa <b>Bitir</b>. Okey atarak ya da çiftle bitirmek iki kat.';
+    h += '</div></div>';
+    $('#melds').innerHTML = h;
+  }
+
   function renderMelds() {
+    if (isOkeyN(view)) return renderMeldsN();
     const v = view, r = v.round, me = v.me;
     const sel = selectedInOrder();
     const probe = drag ? drag.id : (sel.length === 1 ? sel[0] : null);
@@ -818,6 +973,14 @@
 
   // Istakanın sağ üstündeki toplam
   function totalHTML(info, r, opened) {
+    if (isOkeyN(view)) {
+      const cov = E.rackCoverN(rack.slots, COLS, r.okey).cov;
+      const pr = E.pairsN(r.hand, r.okey).pairs;
+      const pairsView = rackKind === 'pairs';
+      const main = pairsView ? `<b>${pr}</b><small> / 7 çift</small>` : `<b>${Math.min(cov, 14)}</b><small> / 14 dizili</small>`;
+      const ok = pairsView ? pr >= 7 : cov >= 14;
+      return `<div class="rtotal${ok ? ' ok' : ''}">${main}</div><div class="rscore"><small>Puanın </small><b>${r.points[view.me]}</b></div>`;
+    }
     const pairsView = opened === 'pairs' || ((!opened || (opened === 'runs' && pairsOk(r) && !info.runs.length)) && rackKind === 'pairs');
     let main, cls = '';
     if (pairsView) {
@@ -853,15 +1016,71 @@
     h += b(p.primary, 'primary');
     h += b(p.second, '');
     if (p.link) h += `<button class="link" data-do="${p.link.act}">${esc(p.link.label)}</button>`;
-    h += `<div class="row"><button class="btn isle${p.isleOn && !busy ? ' on' : ''}" data-do="isle"${p.isleOn && !busy ? '' : ' disabled'}>İşle</button>` +
+    h += '<div class="row">' + (isOkeyN(view) ? '' : `<button class="btn isle${p.isleOn && !busy ? ' on' : ''}" data-do="isle"${p.isleOn && !busy ? '' : ' disabled'}>İşle</button>`) +
       '<button class="btn" data-do="sortRuns">Seri diz</button><button class="btn" data-do="sortPairs">Çift diz</button></div>';
     $('#actions').innerHTML = h;
   }
 
   // ---------- El sonu / oyun sonu ----------
+  // İstanbul Emlak: oyun sonu
+  function renderOverlayBoard() {
+    const v = view, ov = $('#overlay'), r = v.round;
+    if (v.phase !== 'roundEnd' && v.phase !== 'gameEnd') { ov.classList.add('hidden'); ov.innerHTML = ''; ov.dataset.k = ''; return; }
+    const key = v.phase + ':' + r.id;
+    if (ov.dataset.k === key) return;
+    ov.dataset.k = key;
+    const show = () => {
+      ov.innerHTML = '<div class="card">' + window.EmlakUI.overlayHTML(v) +
+        `<div class="btns">${v.phase === 'roundEnd' ? '<button class="btn primary" data-do2="next">Tamam</button>' : '<button class="btn primary" data-do2="reset">Yeni oyun</button>'}</div></div>`;
+      ov.classList.remove('hidden');
+    };
+    if (v.phase === 'roundEnd') setTimeout(() => { if (view && view.phase === 'roundEnd' && ov.dataset.k === key) show(); }, 2200);
+    else show();
+  }
+
+  function renderOverlayN(ov, firstShow) {
+    const v = view, r = v.round, res = r.result, team = isTeam();
+    const pts = res ? res.points : r.points;
+    let h = `<div class="card"${firstShow ? '' : ' style="animation:none"'}>`;
+    if (v.phase === 'roundEnd' && res) {
+      h += `<h2>${esc(res.note)}</h2><p class="sub">${r.no}. el · herkes ${r.start} puanla başladı; puanı biten kaybeder</p>`;
+      if (res.kind === 'win') {
+        h += `<div class="nwin"><div class="nwhy">${esc(window.Dil.ek(seatName(res.winner), 'in'))} eli${res.pairs ? ' (7 çift)' : ''}${res.lastOkey ? ' · okeyle bitirdi' : ''}</div><div class="ngroups">` +
+          res.groups.map((g) => '<span class="ngrp">' + g.map((id) => tileHTML(id, 'tiny', r.okey, { hand: true })).join('') + '</span>').join('') + '</div></div>';
+      }
+      h += '<table class="score"><tr><th>Oyuncu</th><th>Kalan taşlar</th><th class="num">Bu el</th><th class="num">Puan</th></tr>';
+      const order = team ? [0, 2, 1, 3] : [0, 1, 2, 3];
+      order.forEach((i) => {
+        const hand = i === res.winner ? '' : sortForShow(res.hands[i], r.okey).map((id) => tileHTML(id, 'tiny', r.okey, { hand: true })).join('');
+        h += `<tr class="${i === res.winner ? 'win' : ''}"><td>${team ? `<span class="tdot ${teamCls(i)}"></span>` : ''}<b>${esc(seatName(i))}</b>${res.shown === i ? ' <small>(gösterge)</small>' : ''}</td><td><div class="handline">${hand || (i === res.winner ? 'Bitirdi' : '')}</div></td>` +
+          `<td class="num ${res.total[i] < 0 ? 'lossv' : ''}">${res.total[i] || ''}</td><td class="num${pts[i] <= 0 ? ' lossv' : ''}">${pts[i]}</td></tr>`;
+      });
+      h += '</table>';
+      h += `<div class="btns"><button class="btn" data-m="scores">Puan tablosu</button><button class="btn primary" data-do2="next">${res.gameOver ? 'Sonuçları gör' : 'Sonraki el'}</button></div>`;
+    } else if (v.phase === 'gameEnd') {
+      const rank = [0, 1, 2, 3].sort((a, b) => pts[b] - pts[a]);
+      const w = rank[0];
+      const nm = (s2) => team ? `${seatName(s2)} ve ${seatName((s2 + 2) % 4)}` : seatName(s2);
+      h += `<h2>Oyun bitti! Kazanan: ${esc(nm(w))}</h2><p class="sub">Puanı en yüksek olan kazanır.</p><div class="podium">`;
+      // Eşlide iki takım: kazanan takım (w'nin takımı) ve diğeri; puanlar eşlerde aynıdır
+      (team ? [w % 2, 1 - (w % 2)] : rank).forEach((s2, k) => { h += `<div class="pl${k === 0 ? ' first' : ''}">${team ? '' : (k + 1) + '. '}${esc(nm(s2))}<b>${pts[s2]}</b></div>`; });
+      h += '</div><div class="btns"><button class="btn" data-m="scores">El el puanlar</button><button class="btn primary" data-do2="reset">Yeni oyun</button></div>';
+    }
+    h += '</div>';
+    ov.innerHTML = h;
+    ov.classList.remove('hidden');
+  }
+
   function renderOverlay() {
     const v = view, ov = $('#overlay'), r = v.round;
     if (v.phase !== 'roundEnd' && v.phase !== 'gameEnd') { ov.classList.add('hidden'); ov.innerHTML = ''; ov.dataset.k = ''; return; }
+    if (isOkeyN(v)) {
+      const key = v.phase + ':' + r.id + ':' + v.seq;
+      if (ov.dataset.k === key) return;
+      const firstShow = !ov.dataset.k || ov.dataset.k.split(':')[0] !== v.phase || ov.dataset.k.split(':')[1] !== r.id;
+      ov.dataset.k = key;
+      return renderOverlayN(ov, firstShow);
+    }
     const key = v.phase + ':' + r.id + ':' + v.seq;
     if (ov.dataset.k === key) return;
     const firstShow = !ov.dataset.k || ov.dataset.k.split(':')[0] !== v.phase || ov.dataset.k.split(':')[1] !== r.id;
@@ -918,6 +1137,8 @@
     const v = view;
     const card = isCard(v);
     const team = card ? !!v.round.team : isTeam();
+    // Batak eşli ve Okey eşli: takım puanı iki eşe de yazılır; takım sütunu toplam değil tek eşin puanı
+    const teamSum = !(gameOf(v) === 'batak' || gameOf(v) === 'okeyn');
     const cols = [0, 1, 2, 3].filter((i) => (card ? v.round.active[i] : true));
     const dot = (i) => (team ? `<span class="tdot ${i % 2 === 0 ? 'ta' : 'tb'}"></span>` : '');
     let h = '<h2>Puan tablosu</h2>';
@@ -925,21 +1146,50 @@
     else {
       h += '<table class="score"><tr><th>El</th>' + cols.map((i) => `<th class="num">${dot(i)}${esc(v.seats[i] ? v.seats[i].name : '')}</th>`).join('') +
         (team ? '<th class="num"><span class="tdot ta"></span>Takım</th><th class="num"><span class="tdot tb"></span>Takım</th>' : '') + '</tr>';
+      // 101'de eksi iyidir (yeşil); diğer oyunlarda puan kaybı kırmızı
+      const negCls = gameOf(v) === 'okey' ? 'neg' : 'lossv';
       v.history.forEach((x) => {
-        h += `<tr><td>${x.no}</td>` + cols.map((i) => `<td class="num ${x.total[i] < 0 ? 'neg' : ''}">${x.total[i]}</td>`).join('') +
-          (team ? `<td class="num">${x.total[0] + x.total[2]}</td><td class="num">${x.total[1] + x.total[3]}</td>` : '') + '</tr>';
+        h += `<tr><td>${x.no}</td>` + cols.map((i) => `<td class="num ${x.total[i] < 0 ? negCls : ''}">${x.total[i]}</td>`).join('') +
+          (team ? `<td class="num">${teamSum ? x.total[0] + x.total[2] : x.total[0]}</td><td class="num">${teamSum ? x.total[1] + x.total[3] : x.total[1]}</td>` : '') + '</tr>';
       });
-      h += '<tr class="team"><td>Toplam</td>' + cols.map((i) => `<td class="num">${v.totals[i]}</td>`).join('') +
-        (team ? `<td class="num">${v.teamTotals[0]}</td><td class="num">${v.teamTotals[1]}</td>` : '') + '</tr></table>';
-      if (card) h += `<p class="sub" style="margin-top:10px">${v.completed} el oynandı. Hedef ${v.round.target} puan; en yüksek puan kazanır.</p>`;
-      else h += `<p class="sub" style="margin-top:10px">${v.completed} / ${v.settings.rounds} el oynandı. En düşük puan kazanır. Deste bitince açan elindeki taşların toplamını (çiftle açan iki katını), açmayan 202 yazar.</p>`;
+      // Normal okeyde toplam yerine kalan puan gösterilir (başlangıç puanı + değişimler)
+      const base = gameOf(v) === 'okeyn' ? (v.round.start || 20) : 0;
+      h += `<tr class="team"><td>${base ? 'Puan' : 'Toplam'}</td>` + cols.map((i) => `<td class="num">${base + v.totals[i]}</td>`).join('') +
+        (team ? `<td class="num">${teamSum ? v.teamTotals[0] : base + v.totals[0]}</td><td class="num">${teamSum ? v.teamTotals[1] : base + v.totals[1]}</td>` : '') + '</tr></table>';
+      const g = gameOf(v);
+      let foot;
+      if (g === 'okeyn') foot = `${v.completed} el oynandı. Herkes ${base} puanla başladı; birinin puanı bitince oyun biter, en yüksek puan kazanır.`;
+      else if (g === 'batak') foot = `${v.completed} / ${v.settings.batakEl || 7} el oynandı. Tutturan aldığı el kadar, batan eksi ihale yazar; en yüksek puan kazanır.`;
+      else if (card) foot = `${v.completed} el oynandı. Hedef ${v.round.target} puan; en yüksek puan kazanır.`;
+      else foot = `${v.completed} / ${v.settings.rounds} el oynandı. En düşük puan kazanır. Deste bitince açan elindeki taşların toplamını (çiftle açan iki katını), açmayan 202 yazar.`;
+      h += `<p class="sub" style="margin-top:10px">${foot}</p>`;
     }
     h += '<div class="btns"><button class="btn primary" id="closeM">Kapat</button></div>';
     modal(h, (m) => { m.querySelector('#closeM').onclick = closeModal; });
   }
 
+  function rulesOkeyN(st) {
+    return '<h2>Okey kuralları</h2><ul class="rules">' +
+      '<li>106 taş: 4 renkte 1-13, her taştan iki tane ve 2 sahte okey. Başlayana 15, diğerlerine 14 taş. Başlayan çekmeden bir taş atar.</li>' +
+      '<li>Okey, göstergenin bir üstüdür (gösterge 13 ise 1). Okey her taşın yerine geçer; sahte okey (✿) okey olan taşın yerine geçer.</li>' +
+      '<li>Sıranda desteden çek ya da soldakinin attığı son taşı al, sonra bir taş at. Masaya per açılmaz, işlek taş ve okey atma cezası yoktur.</li>' +
+      '<li>Seri: aynı renk, ardışık en az 3 taş. 1, 13\'ün üstüne de gelebilir (12-13-1 olur, 13-1-2 olmaz). Grup: aynı sayı, farklı renk 3-4 taş.</li>' +
+      '<li>Bitirmek: 15. taşı atarken kalan 14 taşın hepsi seri/grup ya da 7 çift olmalı. Taşı ortadaki desteye sürükle ya da <b>Bitir</b>\'e bas.</li>' +
+      `<li>Herkes ${st.okeynPuan || 20} puanla başlar. Biri bitirince diğerleri 2 puan kaybeder; okey atarak ya da çiftle bitirince 4, çift + okeyle 8.${st.mode === 'team' ? ' Eşlide puan takımca tutulur; eşlerden biri bitirince karşı takım kaybeder.' : ''}</li>` +
+      (st.okeynGosterge ? '<li>Göstergenin eşi elinde olan, ilk hamlesinde (taş çekmeden önce) <b>Göstergeyi göster</b> derse diğerleri 1 puan kaybeder.</li>' : '') +
+      '<li>Deste biter ve kimse bitiremezse el puansız biter. Birinin puanı 0\'a inince oyun biter; puanı en yüksek olan kazanır.</li></ul>';
+  }
+
   function showRules() {
     const st = view.settings;
+    if (isOkeyN(view)) {
+      modal(rulesOkeyN(st) + '<div class="btns"><button class="btn primary" id="closeM">Tamam</button></div>', (m) => { m.querySelector('#closeM').onclick = closeModal; });
+      return;
+    }
+    if (isBoard(view)) {
+      modal(window.EmlakUI.rulesHTML(st) + '<div class="btns"><button class="btn primary" id="closeM">Tamam</button></div>', (m) => { m.querySelector('#closeM').onclick = closeModal; });
+      return;
+    }
     if (isCard(view)) {
       modal(window.CardUI.rulesHTML(view.round.game, st) + '<div class="btns"><button class="btn primary" id="closeM">Tamam</button></div>', (m) => { m.querySelector('#closeM').onclick = closeModal; });
       return;
@@ -980,7 +1230,7 @@
     const away = view ? view.seats.map((p, i) => (p && !p.bot && !p.online && i !== view.me ? i : -1)).filter((i) => i >= 0) : [];
     const h = '<h2>Menü</h2><div class="menu">' +
       away.map((i) => `<button class="btn" data-mm="bot:${i}">${esc(view.seats[i].name)} yerine bot koy <small>(bağlantısı yok)</small></button>`).join('') +
-      '<button class="btn" data-mm="scores">Puan tablosu</button>' +
+      (isBoard(view) ? '' : '<button class="btn" data-mm="scores">Puan tablosu</button>') +
       '<button class="btn" data-mm="invite">Bağlanma adresi (QR)</button>' +
       '<button class="btn" data-mm="full">Tam ekran</button>' +
       '<button class="btn" data-mm="rules">Kısa kurallar</button>' +
@@ -1021,7 +1271,7 @@
 
   // =============== Süre ===============
   function updateTimer() {
-    const bars = $$('#timebar, #cgtime');
+    const bars = $$('#timebar, #cgtime, #emtime');
     // Süre çubuğu genişlik yerine transform ile kısalır (sayfayı yeniden dizmeden, akıcı)
     const setBar = (b, f) => { const i = b.firstElementChild, t = 'scaleX(' + f.toFixed(3) + ')'; if (i.style.transform !== t) i.style.transform = t; };
     if (!view || !view.round || view.phase !== 'playing' || !deadline) {
@@ -1031,7 +1281,7 @@
     const rem = Math.max(0, deadline - performance.now());
     const frac = Math.min(1, rem / turnTotal);
     const low = rem < 10000;
-    const mine = myTurn();
+    const mine = isBoard(view) ? window.EmlakUI.myMove(view) : myTurn();
     bars.forEach((b) => { setBar(b, mine ? frac : 0); b.classList.toggle('low', low); });
     $$('.who.turn .pg').forEach((c) => { c.style.strokeDashoffset = (100 * (1 - frac)).toFixed(1); c.classList.toggle('low', low); });
     const s = $('#secs');
@@ -1106,6 +1356,12 @@
     if (nr.turn === me && pr.tphase === 'draw' && nr.tphase === 'play' && nr.stockCount === pr.stockCount - 1 && nr.lastDrawn !== null) {
       const el = tileEl(nr.lastDrawn);
       if (el) fly(tileHTML(nr.lastDrawn, '', nr.okey, { hand: true }), rects.deck || rectOf($('#deck .tile')), el, { hide: true });
+    }
+    // Normal okeyde yandan alınan taş
+    if (isOkeyN(nv) && nr.turn === me && pr.tphase === 'draw' && nr.tphase === 'play' && nr.lastDrawn !== null && nr.stockCount === pr.stockCount) {
+      const el = tileEl(nr.lastDrawn), left = (me + 3) % 4;
+      const src = rectOf($('#pile-bl .tile'));
+      if (el && src && pr.discards[left].top === nr.lastDrawn) fly(tileHTML(nr.lastDrawn, '', nr.okey, { hand: true }), src, el, { hide: true });
     }
     // Atılan taşlar
     for (let s = 0; s < 4; s++) {
@@ -1222,6 +1478,7 @@
     const slot = el.closest('.slot');
     if (slot && rackEl.contains(slot)) { drag.target = { kind: 'slot', slot: +slot.dataset.slot }; setHot(slot); return; }
     if (el.closest('#pile-br')) { drag.target = { kind: 'discard' }; setHot($('#pile-br')); return; }
+    if (isOkeyN(view) && el.closest('#deck') && view.round.tphase === 'play' && myTurn()) { drag.target = { kind: 'finish' }; setHot($('#deck')); return; }
     if (el.closest('#pile-bl') && drag.id === pendingSide) { drag.target = { kind: 'giveBack' }; setHot($('#pile-bl')); return; }
     const meld = el.closest('.meld');
     if (meld) {
@@ -1248,6 +1505,12 @@
       } else if (d.target) {
         if (d.target.kind === 'slot') { moveTile(d.id, d.slot, d.target.slot); }
         else if (d.target.kind === 'discard') discardTile(d.id);
+        else if (d.target.kind === 'finish') {
+          selected.clear(); selected.add(d.id);
+          const f = finishPlanN();
+          if (f && f.tile === d.id) doAct('finish');
+          else { selected.clear(); toast('Bu taşı atınca elin bitmiyor.'); }
+        }
         else if (d.target.kind === 'giveBack') { pendingRender = false; giveBack(); return; }
         else if (d.target.kind === 'meld') addTile(d.id, d.target.meld, d.target.at);
       }
@@ -1273,7 +1536,7 @@
     const set = t.closest('[data-set]');
     if (set) {
       const k = set.dataset.set, raw = set.dataset.val;
-      const val = k === 'katlamali' || k === 'unoStack' ? raw === 'true' : (k === 'mode' || k === 'game' ? raw : +raw);
+      const val = ['katlamali', 'unoStack', 'okeynGosterge', 'emlakOtopark'].includes(k) ? raw === 'true' : (['mode', 'game', 'batakTip'].includes(k) ? raw : +raw);
       api('settings', { [k]: val });
       return;
     }
@@ -1308,6 +1571,19 @@
     if (t.closest('#menuBtn')) { showMenu(); return; }
     const d = t.closest('[data-do]');
     if (d) { if (!d.disabled) doAct(d.dataset.do); return; }
+    if (t.closest('#deck') && isOkeyN(view)) {
+      const r = view.round;
+      if (!myTurn()) toast('Sıra sende değil.');
+      else if (r.tphase === 'draw') doAct(r.stockCount ? 'draw' : 'endStock');
+      else if (finishPlanN()) doAct('finish');
+      else toast('Bu turda taş aldın. Şimdi bir taş at (elin bitince Bitir).');
+      return;
+    }
+    if (t.closest('#pile-bl') && isOkeyN(view)) {
+      if (view.round.canTake) doAct('take');
+      else if (myTurn() && view.round.tphase === 'play') toast('Bu turda taş aldın.');
+      return;
+    }
     if (t.closest('#deck')) {
       const r = view.round;
       if (!myTurn()) toast('Sıra sende değil.');

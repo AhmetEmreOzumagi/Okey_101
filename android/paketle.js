@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 const KOK = path.join(__dirname, '..');
-const MODULLER = ['lib.js', 'public/engine.js', 'pisti.js', 'uno.js', 'game.js', 'bot.js', 'android/host/host-core.js'];
+const MODULLER = ['public/dil.js', 'lib.js', 'public/engine.js', 'public/emlak-data.js', 'pisti.js', 'uno.js', 'okeyn.js', 'batak.js', 'emlak.js', 'game.js', 'bot.js', 'android/host/host-core.js'];
 
 function paketMetni() {
   let s = '// ÜRETİLMİŞ DOSYA — elle değiştirmeyin. Kaynak: depo kökündeki JS dosyaları (bkz. android/paketle.js).\n';
