@@ -1,6 +1,7 @@
 'use strict';
 /* Bütün oyunların ortak yardımcıları (okey, pişti, renk). */
 const crypto = require('crypto');
+const Dil = require('./public/dil.js');
 
 class GameError extends Error {}
 const fail = (msg) => { throw new GameError(msg); };
@@ -39,4 +40,7 @@ function nextSeat(active, seat, dir) {
   return seat;
 }
 
-module.exports = { GameError, fail, shuffle, newToken, randomInt, addLog, nameOf, startClock, nextSeat };
+// Oyuncu adına Türkçe ek: ekli(s, 2, 'e') → "Ayşe'ye"
+const ekli = (s, i, kind) => Dil.ek(nameOf(s, i), kind);
+
+module.exports = { GameError, fail, shuffle, newToken, randomInt, addLog, nameOf, ekli, ek: Dil.ek, startClock, nextSeat };

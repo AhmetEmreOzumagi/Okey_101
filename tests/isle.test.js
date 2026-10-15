@@ -54,10 +54,19 @@ test('masadaki okeyin yerine geçen taş: seri ve grup, çiftte olmaz', () => {
   assert.equal(E.swapOkey(run, T(1, 5), okey), null); // renk tutmuyor
   assert.equal(E.swapOkey(run, WILD2, okey), null); // okeyle okey alınmaz
 
+  // 3'lü grup: okey sarı da mavi de olabilir; tek taşla alınmaz, ama eksik renk işlenebilir
   const set = meld([T(0, 9), T(3, 9), WILD], 2, 1); // eksik: sarı ya da mavi 9
-  assert.ok(E.swapOkey(set, T(1, 9), okey));
-  assert.ok(E.swapOkey(set, T(2, 9), okey));
+  assert.equal(E.swapOkey(set, T(1, 9), okey), null);
+  assert.equal(E.swapOkey(set, T(2, 9), okey), null);
   assert.equal(E.swapOkey(set, T(0, 9, 1), okey), null); // kırmızı zaten var
+  const set4 = E.addToMeld(set, T(1, 9), okey); // sarı 9 işlendi: okey artık sadece mavi 9
+  assert.ok(set4 && set4.tiles.length === 4);
+  assert.equal(E.swapOkey(set4, T(1, 9, 1), okey), null); // sarı artık var
+  const sw4 = E.swapOkey(set4, T(2, 9), okey); // mavi 9 okeyi alır
+  assert.ok(sw4);
+  assert.equal(sw4.okeyId, WILD);
+  assert.equal(E.canSwap(T(2, 9), [set], okey), false);
+  assert.equal(E.canSwap(T(2, 9), [set4], okey), true);
 
   const pair = Object.assign(E.interpret([T(0, 3), WILD], okey, 'pairs'), { id: 3, owner: 0 });
   assert.equal(E.swapOkey(pair, T(0, 3, 1), okey), null);
@@ -66,6 +75,7 @@ test('masadaki okeyin yerine geçen taş: seri ve grup, çiftte olmaz', () => {
   const blue = meld([T(2, 6), WILD, T(2, 8)], 4, 0);
   assert.ok(E.swapOkey(blue, FAKE, okey));
   assert.ok(E.canSwap(T(0, 5), [set, run], okey));
+  assert.equal(E.canSwap(T(1, 9), [set, run], okey), false);
   assert.equal(E.canSwap(T(0, 8), [set, run], okey), false);
 });
 
@@ -89,6 +99,29 @@ test('işle planı: önce okey, sonra zincirleme işleme; bir taş elde kalır',
   assert.ok(p.usedMust);
   p = E.planIsle([T(1, 2), T(1, 3)], [run], okey, [], T(1, 2));
   assert.equal(p.usedMust, false);
+  // 3'lü gruptaki okey: iki eksik renk de eldeyse önce biri işlenir, öbürü okeyi alır
+  const set = meld([T(0, 9), T(3, 9), WILD], 2, 1);
+  p = E.planIsle([T(1, 9), T(2, 9), T(1, 1)], [set], okey, [], null);
+  assert.deepEqual(p.ops.map((o) => o.type), ['add', 'swap']);
+  assert.ok(p.hand.includes(WILD));
+  // sadece biri eldeyse: işlenir ama okey alınmaz
+  p = E.planIsle([T(2, 9), T(1, 1)], [set], okey, [], null);
+  assert.deepEqual(p.ops.map((o) => o.type), ['add']);
+  assert.ok(!p.hand.includes(WILD));
+});
+
+test('3\'lü gruptaki okey tek taşla alınmaz; iki eksik renk de konunca alınır', () => {
+  const set = meld([T(0, 13), T(1, 13), WILD], 1, 2); // kırmızı 13, sarı 13, okey (mavi ya da siyah 13)
+  const s = setup([[T(2, 13), T(3, 13), T(3, 2)], [T(1, 1)], [T(1, 2)], [T(1, 3)]], [set], { opened: ['runs', null, 'runs', null] });
+  const n = count(s);
+  assert.throws(() => G.act(s, 0, { type: 'swap', tile: T(2, 13), meld: 1 }), /okeyin yerine geçmez/);
+  G.act(s, 0, { type: 'add', tile: T(2, 13), meld: 1 }); // mavi 13 işlenir, okey yerinde kalır
+  assert.equal(s.round.melds[0].tiles.length, 4);
+  assert.ok(!s.round.hands[0].includes(WILD));
+  G.act(s, 0, { type: 'swap', tile: T(3, 13), meld: 1 }); // siyah 13 okeyi alır
+  assert.ok(s.round.hands[0].includes(WILD));
+  assert.ok(!s.round.melds[0].tiles.includes(WILD));
+  assert.equal(count(s), n);
 });
 
 test('açmış oyuncu masadaki okeyi alır; açmamış alamaz', () => {

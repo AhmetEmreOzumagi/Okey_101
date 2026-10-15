@@ -162,8 +162,12 @@
 
   // Masadaki okeyi almak: okeyin yerine geçtiği taşı koyup okeyi ele alırsın.
   // Seri ve gruplarda olur (çiftte olmaz). Sonuç: { meld: yeni per, okeyId: alınan okey }
+  // Grupta okey ancak grup 4'lüyken alınır: 3'lü grupta (ör. kırmızı 13, sarı 13, okey) okey mavi de
+  // siyah da olabilir; tek taşla alınmaz. Önce eksik renklerden biri işlenir (grup 4'lü olur, okey artık
+  // tek bir rengin yerindedir), sonra o son renk konup okey alınır. Yani iki eksik taşın ikisi de gerekir.
   function swapOkey(meld, id, okey) {
     if (!meld || (meld.type !== 'run' && meld.type !== 'set')) return null;
+    if (meld.type === 'set' && meld.tiles.length < 4) return null;
     var nt = natural(id, okey);
     if (!nt) return null; // okeyle okey alınmaz
     for (var i = 0; i < meld.tiles.length; i++) {
@@ -539,7 +543,265 @@
     return { pairs: pairs, rest: rest, wild: wild };
   }
 
+  // ================= Normal (düz) okey =================
+  // 101'den farkları: masaya per açılmaz; 12-13-1 serisi geçerlidir (1, 13'ün üstüne gelebilir; 13-1-2 olmaz);
+  // el, 15. taş atılınca kalan 14 taşın tamamı seri/grup (ya da 7 çift) olunca biter.
+
+  // Tek bir per mi (sıra önemli değil): grup ya da 12-13-1'e izin veren seri
+  function meldN(ids, okey) {
+    if (ids.length < 3) return false;
+    if (ids.length <= 4 && trySet(ids, okey)) return true;
+    if (ids.length > 13) return false;
+    var nats = [], wild = 0;
+    for (var i = 0; i < ids.length; i++) {
+      var nt = natural(ids[i], okey);
+      if (nt) nats.push(nt); else wild++;
+    }
+    if (!nats.length) return false;
+    var c = nats[0].c;
+    for (i = 1; i < nats.length; i++) if (nats[i].c !== c) return false;
+    var len = ids.length;
+    // 1 ya en altta (1) ya da 13'ün üstünde (14) sayılır
+    for (var hi1 = 0; hi1 < 2; hi1++) {
+      var vals = nats.map(function (x) { return x.n === 1 && hi1 ? 14 : x.n; }).sort(function (a, b) { return a - b; });
+      var dup = false;
+      for (i = 1; i < vals.length; i++) if (vals[i] === vals[i - 1]) dup = true;
+      if (dup) continue;
+      var lo = vals[0], hi = vals[vals.length - 1];
+      var sMin = Math.max(1, hi - len + 1), sMax = Math.min(lo, 15 - len);
+      if (sMin <= sMax) return true;
+    }
+    return false;
+  }
+
+  // Çift: aynı renk ve sayıdan iki taş; okey her taşla çift olur
+  function pairsN(ids, okey) {
+    var wild = 0, cnt = {};
+    ids.forEach(function (id) {
+      var nt = natural(id, okey);
+      if (!nt) { wild++; return; }
+      var k = nt.c * 100 + nt.n;
+      cnt[k] = (cnt[k] || 0) + 1;
+    });
+    var pairs = 0, singles = 0;
+    Object.keys(cnt).forEach(function (k) { pairs += Math.floor(cnt[k] / 2); singles += cnt[k] % 2; });
+    var usedWild = Math.min(wild, singles);
+    pairs += usedWild + Math.floor((wild - usedWild) / 2);
+    return { pairs: pairs, singles: singles - usedWild };
+  }
+
+  // En çok taşı perlere koyan bölüşüm (12-13-1 dahil). Sonuç: { cov: perlerdeki taş sayısı, groups: [[id]], rest: [id] }
+  function solveN(ids, okey) {
+    var items = ids.map(function (id) { return { id: id, nt: natural(id, okey) }; });
+    var nats = items.filter(function (t) { return t.nt; }).sort(function (a, b) { return a.nt.c - b.nt.c || a.nt.n - b.nt.n; });
+    var wilds = items.filter(function (t) { return !t.nt; });
+    var arr = nats.concat(wilds), N = arr.length, W0 = nats.length;
+    if (N > 30) return { cov: 0, groups: [], rest: ids.slice() };
+    var memo = {};
+    function bits(m) { var k = 0; while (m) { m &= m - 1; k++; } return k; }
+    function wildIdx(mask) { var out = []; for (var i = W0; i < N; i++) if (mask & (1 << i)) out.push(i); return out; }
+    // i taşını içeren, mask içindeki taşlardan kurulabilen perler (bit maskesi olarak)
+    function meldsWith(i, mask) {
+      var t = arr[i].nt, out = [], wi = wildIdx(mask);
+      var rest = mask & ~(1 << i);
+      // Grup: aynı sayı, farklı renkler
+      var byColor = {};
+      for (var j = 0; j < W0; j++) {
+        if (!(rest & (1 << j))) continue;
+        var u = arr[j].nt;
+        if (u.n === t.n && u.c !== t.c && byColor[u.c] === undefined) byColor[u.c] = j;
+      }
+      var cols = Object.keys(byColor).map(function (k) { return byColor[k]; });
+      for (var sub = 0; sub < (1 << cols.length); sub++) {
+        var m = 1 << i, size = 1;
+        for (var q = 0; q < cols.length; q++) if (sub & (1 << q)) { m |= 1 << cols[q]; size++; }
+        for (var w = 0; w <= wi.length && size + w <= 4; w++) {
+          if (size + w >= 3) {
+            var mm = m;
+            for (var z = 0; z < w; z++) mm |= 1 << wi[z];
+            out.push(mm);
+          }
+        }
+      }
+      // Seri: aynı renk; t'nin değeri v (1 ise 14 de olabilir)
+      var vs = t.n === 1 ? [1, 14] : [t.n];
+      vs.forEach(function (v) {
+        for (var s = Math.max(1, v - 12); s <= v; s++) {
+          for (var e = Math.max(v, s + 2); e <= Math.min(14, s + 12); e++) {
+            // her değer için aday taş: doğal (bu maskede) ya da okey
+            var need = [];
+            for (var x = s; x <= e; x++) {
+              if (x === v) continue;
+              var nn = x === 14 ? 1 : x, found = -1;
+              for (var j2 = 0; j2 < W0; j2++) {
+                if ((rest & (1 << j2)) && arr[j2].nt.c === t.c && arr[j2].nt.n === nn) { found = j2; break; }
+              }
+              need.push(found);
+            }
+            var req = need.filter(function (f) { return f < 0; }).length;
+            if (req > wi.length) continue;
+            // okeyle doldurulacak yerler: zorunlular + (kalan okey kadar) doğal yerine okey
+            var natPos = [];
+            need.forEach(function (f, k) { if (f >= 0) natPos.push(k); });
+            var extraMax = Math.min(wi.length - req, natPos.length);
+            var combos = [[]];
+            if (extraMax >= 1) natPos.forEach(function (p) { combos.push([p]); });
+            if (extraMax >= 2) for (var a = 0; a < natPos.length; a++) for (var b = a + 1; b < natPos.length; b++) combos.push([natPos[a], natPos[b]]);
+            combos.forEach(function (cmb) {
+              var m2 = 1 << i, wk = 0, ok = true;
+              need.forEach(function (f, k) {
+                if (f < 0 || cmb.indexOf(k) >= 0) { if (wk >= wi.length) ok = false; else m2 |= 1 << wi[wk++]; }
+                else m2 |= 1 << f;
+              });
+              if (ok) out.push(m2);
+            });
+          }
+        }
+      });
+      return out;
+    }
+    function best(mask) {
+      if (!mask) return { cov: 0, groups: [] };
+      if (memo[mask]) return memo[mask];
+      var i = 0;
+      while (!(mask & (1 << i))) i++;
+      if (i >= W0) { memo[mask] = { cov: 0, groups: [] }; return memo[mask]; }
+      var res = best(mask & ~(1 << i));
+      var ms = meldsWith(i, mask);
+      for (var k = 0; k < ms.length; k++) {
+        var sub = best(mask & ~ms[k]);
+        var cov = sub.cov + bits(ms[k]);
+        if (cov > res.cov) res = { cov: cov, groups: [ms[k]].concat(sub.groups) };
+        if (res.cov === bits(mask)) break;
+      }
+      memo[mask] = res;
+      return res;
+    }
+    var full = (1 << N) - 1;
+    var r = best(full);
+    var used = 0;
+    var groups = r.groups.map(function (m) {
+      used |= m;
+      var g = [];
+      for (var i = 0; i < N; i++) if (m & (1 << i)) g.push(arr[i].id);
+      return orderMeldN(g, okey);
+    });
+    var rest = [];
+    for (var i = 0; i < N; i++) if (!(used & (1 << i))) rest.push(arr[i].id);
+    return { cov: r.cov, groups: groups, rest: rest };
+  }
+
+  // Peri ıstakada okunacak sıraya koyar (seride küçükten büyüğe, okeyler boşluklarda; grupta renk sırası)
+  function orderMeldN(g, okey) {
+    var nats = [], wild = [];
+    g.forEach(function (id) { var nt = natural(id, okey); if (nt) nats.push({ id: id, nt: nt }); else wild.push(id); });
+    if (!nats.length) return g.slice();
+    var isRun = nats.every(function (x) { return x.nt.c === nats[0].nt.c; }) && (nats.length === 1 || nats[0].nt.n !== nats[1].nt.n);
+    if (!isRun) return nats.sort(function (a, b) { return a.nt.c - b.nt.c; }).map(function (x) { return x.id; }).concat(wild);
+    var len = g.length;
+    for (var hi1 = 0; hi1 < 2; hi1++) {
+      var vals = nats.map(function (x) { return { id: x.id, v: x.nt.n === 1 && hi1 ? 14 : x.nt.n }; }).sort(function (a, b) { return a.v - b.v; });
+      var lo = vals[0].v, hi = vals[vals.length - 1].v;
+      var sMin = Math.max(1, hi - len + 1), sMax = Math.min(lo, 15 - len);
+      if (sMin > sMax) continue;
+      var s = sMax, out = [], wi = 0, byV = {};
+      vals.forEach(function (x) { byV[x.v] = x.id; });
+      for (var v = s; v < s + len; v++) out.push(byV[v] !== undefined ? byV[v] : wild[wi++]);
+      return out;
+    }
+    return g.slice();
+  }
+
+  // El bitiyor mu: kalan taşların hepsi perlerde ya da 7 çift
+  function finishN(ids, okey) {
+    var pr = pairsN(ids, okey);
+    if (ids.length === 14 && pr.pairs === 7 && pr.singles === 0) return { kind: 'pairs' };
+    var r = solveN(ids, okey);
+    if (r.cov === ids.length) return { kind: 'runs', groups: r.groups };
+    return null;
+  }
+
+  // Istakadaki dizilerden geçerli perlerde kaç taş var (normal okey göstergesi)
+  function rackCoverN(slots, cols, okey) {
+    var cov = 0, chunks = [];
+    for (var r = 0; r * cols < slots.length; r++) {
+      var c = 0;
+      while (c < cols) {
+        if (slots[r * cols + c] === null || slots[r * cols + c] === undefined) { c++; continue; }
+        var seg = [], s0 = c;
+        while (c < cols && slots[r * cols + c] !== null && slots[r * cols + c] !== undefined) { seg.push(slots[r * cols + c]); c++; }
+        // diziyi soldan sağa en uzun perlere böl
+        var n = seg.length, bestArr = new Array(n + 1);
+        bestArr[n] = { cov: 0, ch: [] };
+        for (var i = n - 1; i >= 0; i--) {
+          var cand = { cov: bestArr[i + 1].cov, ch: bestArr[i + 1].ch };
+          for (var len = 3; len <= 13 && i + len <= n; len++) {
+            var t = seg.slice(i, i + len);
+            if (!meldN(t, okey)) continue;
+            if (len + bestArr[i + len].cov > cand.cov) cand = { cov: len + bestArr[i + len].cov, ch: [{ row: r, col: s0 + i, len: len, tiles: t }].concat(bestArr[i + len].ch) };
+          }
+          bestArr[i] = cand;
+        }
+        cov += bestArr[0].cov;
+        chunks = chunks.concat(bestArr[0].ch);
+      }
+    }
+    return { cov: cov, chunks: chunks };
+  }
+
+  // Normal okey için ıstaka dizme: çözücünün perleri bloklar halinde, kalanlar renge göre
+  function arrangeN(ids, okey, cols, rows) {
+    var r = solveN(ids, okey);
+    var fake = r.groups.map(function (g) { return g; });
+    return arrangeBlocks(fake, r.rest, okey, cols, rows);
+  }
+  function arrangeBlocks(groups, rest, okey, cols, rows) {
+    cols = cols || 15; rows = rows || 2;
+    var wild = rest.filter(function (id) { return isWild(id, okey); });
+    var loose = rest.filter(function (id) { return !isWild(id, okey); }).sort(function (a, b) {
+      var x = natural(a, okey), y = natural(b, okey);
+      return x.c - y.c || x.n - y.n;
+    });
+    var rowsArr = [[], []].slice(0, rows), used = [];
+    for (var q = 0; q < rows; q++) { rowsArr[q] = []; used.push(0); }
+    var blocks = groups.slice().sort(function (a, b) { return b.length - a.length; });
+    var placeBlock = function (tiles) {
+      for (var rr = 0; rr < rows; rr++) {
+        var need = tiles.length + (rowsArr[rr].length ? 1 : 0);
+        if (used[rr] + need <= cols) {
+          if (rowsArr[rr].length) rowsArr[rr].push(null);
+          rowsArr[rr] = rowsArr[rr].concat(tiles); used[rr] += need; return true;
+        }
+      }
+      return false;
+    };
+    var leftover = [];
+    blocks.forEach(function (b) { if (!placeBlock(b)) leftover = leftover.concat(b); });
+    var tail = leftover.concat(loose, wild);
+    // kalanları boş yerlere (önce bir boşluk bırakarak) dağıt
+    for (var rr = 0; rr < rows && tail.length; rr++) {
+      if (rowsArr[rr].length && used[rr] < cols) { rowsArr[rr].push(null); used[rr]++; }
+      while (used[rr] < cols && tail.length) { rowsArr[rr].push(tail.shift()); used[rr]++; }
+    }
+    var slots = [];
+    for (rr = 0; rr < rows; rr++) {
+      var line = rowsArr[rr].slice(0, cols);
+      while (line.length < cols) line.push(null);
+      slots = slots.concat(line);
+    }
+    // sığmayan kalırsa (çok nadir) boş yerlere
+    tail.forEach(function (id) { var k = slots.indexOf(null); if (k >= 0) slots[k] = id; });
+    return slots;
+  }
+
   return {
+    meldN: meldN,
+    pairsN: pairsN,
+    solveN: solveN,
+    finishN: finishN,
+    orderMeldN: orderMeldN,
+    rackCoverN: rackCoverN,
+    arrangeN: arrangeN,
     suggestMelds: suggestMelds,
     suggestPairs: suggestPairs,
     segmentChunks: segmentChunks,
