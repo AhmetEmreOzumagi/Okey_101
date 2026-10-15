@@ -1,8 +1,9 @@
 import java.util.Properties
 
 // 101 Okey · Pişti — Android uygulaması.
-// Oyun mantığı yeniden yazılmadı: depo kökündeki JS dosyaları (game.js, pisti.js, uno.js, bot.js, lib.js,
-// public/engine.js) ve telefon arayüzü (public/) derleme sırasında uygulamanın assets klasörüne paketlenir.
+// Oyun mantığı yeniden yazılmadı: depo kökündeki JS dosyaları (game.js, pisti.js, uno.js, okeyn.js, batak.js,
+// emlak.js, bot.js, lib.js, public/engine.js, public/emlak-data.js, public/dil.js) ve telefon arayüzü (public/)
+// derleme sırasında uygulamanın assets klasörüne paketlenir.
 // Böylece web sürümüyle uygulama aynı dosyalardan beslenir.
 plugins {
     id("com.android.application")
@@ -21,8 +22,8 @@ android {
         applicationId = "ahmetemreozumagi.okeypisti"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     signingConfigs {
@@ -68,7 +69,8 @@ dependencies {
 // Depo kökündeki oyun dosyalarını assets'e kopyalar:
 //   assets/public/*  : telefonlarda açılan arayüz (HTTP sunucusu tek sayfa halinde sunar)
 //   assets/host.js   : masa kuran telefonun gizli WebView'inde çalışan oyun çekirdeği
-//                      (lib.js, engine.js, pisti.js, uno.js, game.js, bot.js, host-core.js tek dosyada)
+//                      (lib.js, dil.js, engine.js, emlak-data.js, pisti.js, uno.js, okeyn.js, batak.js, emlak.js,
+//                       game.js, bot.js, host-core.js tek dosyada)
 // Aynı işi Node ile yapan betik: android/paketle.js (testler onu kullanır).
 abstract class PaketleJs : DefaultTask() {
     @get:InputDirectory abstract val publicKlasoru: DirectoryProperty
@@ -105,10 +107,15 @@ val paketleJs = tasks.register<PaketleJs>("paketleJs") {
     description = "Oyunun JS dosyalarını ve public/ arayüzünü assets'e paketler"
     publicKlasoru.set(File(depoKoku, "public"))
     moduller.from(
+        File(depoKoku, "public/dil.js"),
         File(depoKoku, "lib.js"),
         File(depoKoku, "public/engine.js"),
+        File(depoKoku, "public/emlak-data.js"),
         File(depoKoku, "pisti.js"),
         File(depoKoku, "uno.js"),
+        File(depoKoku, "okeyn.js"),
+        File(depoKoku, "batak.js"),
+        File(depoKoku, "emlak.js"),
         File(depoKoku, "game.js"),
         File(depoKoku, "bot.js"),
         File(rootDir, "host/host-core.js"),

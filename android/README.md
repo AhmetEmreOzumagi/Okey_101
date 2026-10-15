@@ -1,6 +1,6 @@
 # 101 Okey · Pişti — Android uygulaması
 
-Aynı oyunun Android sürümü. Oyun mantığı yeniden yazılmadı: depo kökündeki `game.js`, `pisti.js`, `uno.js`, `bot.js`, `lib.js`, `public/engine.js` ve telefon arayüzü `public/` derleme sırasında uygulamaya paketlenir. Web sürümü (`node baslat.js`) olduğu gibi çalışmaya devam eder; ikisi aynı dosyalardan beslenir.
+Aynı oyunun Android sürümü. Oyun mantığı yeniden yazılmadı: depo kökündeki `game.js`, `okeyn.js`, `pisti.js`, `batak.js`, `uno.js`, `emlak.js`, `bot.js`, `lib.js`, `public/engine.js`, `public/emlak-data.js`, `public/dil.js` ve telefon arayüzü `public/` derleme sırasında uygulamaya paketlenir. Web sürümü (`node baslat.js`) olduğu gibi çalışmaya devam eder; ikisi aynı dosyalardan beslenir.
 
 ## Nasıl çalışır?
 
